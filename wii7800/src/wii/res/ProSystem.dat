@@ -43,7 +43,7 @@ flags=0
 crossx=15
 crossy=-20
 [404f95103b70975a42cb09946dc3adca]
-title=Apple Snaffle
+title=Apple Snaffle (Jul 17-Rev 24) (2009)
 type=3
 pokey=true
 controller1=1
@@ -428,14 +428,6 @@ controller1=1
 controller2=1
 region=0
 flags=0
-[1745feadabb24e7cefc375904c73fa4c]
-title=Impossible Mission
-type=3
-pokey=false
-controller1=1
-controller2=1
-region=0
-flags=0
 [80dead01ea2db5045f6f4443faa6fce8]
 title=Impossible Mission
 type=3
@@ -486,7 +478,7 @@ region=0
 flags=0
 [5e0a1e832bbcea6facb832fde23a440a]
 title=Karateka                        
-type=1
+type=4
 pokey=false
 controller1=1
 controller2=1
@@ -689,7 +681,15 @@ controller2=1
 region=1
 flags=0
 [ec206c8db4316eb1ebce9fc960da7d8f]
-title=Pit Fighter                     
+title=Pit Fighter (Overdump)
+type=4
+pokey=false
+controller1=1
+controller2=1
+region=0
+flags=0
+[05f43244465943ce819780a71a5b572a]
+title=Pit Fighter
 type=4
 pokey=false
 controller1=1
@@ -711,6 +711,14 @@ pokey=false
 controller1=1
 controller2=1
 region=1
+flags=0
+[86546808dc60961cdb1b20e761c50ab1]
+title=Plutos
+type=3
+pokey=false
+controller1=1
+controller2=1
+region=0
 flags=0
 [584582bb09ee8122e7fc09dc7d1ed813]
 title=Pole Position II                
@@ -744,7 +752,23 @@ controller1=1
 controller2=1
 region=0
 flags=0
+[442761655bb25ddfe5f7ab16bf591c6f]
+title=Rampart
+type=1
+pokey=false
+controller1=1
+controller2=1
+region=0
+flags=0
 [bfad016d6e77eaccec74c0340aded8b9]
+title=Realsports Baseball (Overdump)
+type=1
+pokey=false
+controller1=1
+controller2=1
+region=0
+flags=0
+[383ed9bd1efb9b6cb3388a777678c928]
 title=Realsports Baseball
 type=1
 pokey=false
@@ -788,7 +812,7 @@ flags=0
 [b697d9c2d1b9f6cb21041286d1bbfa7f]
 title=Sentinel
 type=4
-pokey=true
+pokey=false
 controller1=2
 controller2=2
 region=0
@@ -798,13 +822,21 @@ crossy=-13
 [5469b4de0608f23a5c4f98f331c9e75f]
 title=Sentinel
 type=4
-pokey=true
+pokey=false
 controller1=2
 controller2=2
 region=1
 flags=0
 crossx=20
 crossy=25
+[2d643ac548c40e58c99d0fe433ba4ba0]
+title=Sirius
+type=3
+pokey=false
+controller1=2
+controller2=2
+region=0
+flags=0
 [cbb0746192540a13b4c7775c7ce2021f]
 title=Summer Games
 type=3
@@ -846,6 +878,14 @@ controller2=1
 region=1
 flags=0
 [44f862bca77d68b56b32534eda5c198d]
+title=Tank Command (Overdump)
+type=1
+pokey=false
+controller1=1
+controller2=1
+region=0
+flags=0
+[5c4f752371a523f15e9980fea73b874d]
 title=Tank Command
 type=1
 pokey=false
@@ -894,6 +934,14 @@ controller2=1
 region=0
 flags=0
 [d12e665347f354048b9d13092f7868c9]
+title=Tower Toppler (Overdump)
+type=3
+pokey=false
+controller1=1
+controller2=1
+region=0
+flags=0
+[8d64763db3100aadc552db5e6868506a]
 title=Tower Toppler
 type=3
 pokey=false
@@ -910,6 +958,14 @@ controller2=1
 region=1
 flags=0
 [acf63758ecf3f3dd03e9d654ae6b69b7]
+title=Water Ski (Overdump)
+type=1
+pokey=false
+controller1=1
+controller2=1
+region=0
+flags=0
+[427cb05d0a1abb068998e2760d77f4fb]
 title=Water Ski
 type=1
 pokey=false
