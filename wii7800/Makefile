@@ -36,7 +36,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lSDL_ttf -lSDL -lfreetype -lfat -lwiiuse -lbte -logc -lm -lpng -lz
+LIBS	:=	-lSDL_ttf -lSDL -lfreetype -lfat -lwiiuse -lwiikeyboard -lbte -logc -lm -lpng -lz -lbz2
 
 #-lSDL_ttf -lSDL -lSDL_image -lpng -ljpeg -lfreetype -lfat -lwiiuse \
 #            -lbte -logc -lz -lm
@@ -146,7 +146,9 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					-I$(CURDIR)/$(BUILD) \
 					-I$(LIBOGC_INC) \
-					-I$(LIBOGC_INC)/SDL
+					-I$(LIBOGC_INC)/SDL \
+                    -I$(DEVKITPRO)/portlibs/ppc/include \
+                    -I$(DEVKITPRO)/portlibs/ppc/include/freetype2
 					
 #-Iz:/work/repos/project/sdl-wii/SDL/include
 
@@ -154,7 +156,8 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 # build a list of library paths
 #---------------------------------------------------------------------------------
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib) \
-					-L$(LIBOGC_LIB) 
+					-L$(LIBOGC_LIB) \
+                    -L$(DEVKITPRO)/portlibs/ppc/lib
 					
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
 .PHONY: $(BUILD) clean

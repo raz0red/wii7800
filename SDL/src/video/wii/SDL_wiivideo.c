@@ -802,7 +802,7 @@ WII_InitVideoSystem()
 	{
 		case VI_PAL: // 576 lines (PAL 50hz)
 			// display should be centered vertically (borders)
-			vmode = &TVPal574IntDfScale;
+			vmode = &TVPal576IntDfScale;
 			vmode->xfbHeight = 480;
 			vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - 480)/2;
 			vmode->viHeight = 480;
