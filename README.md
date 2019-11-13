@@ -1,13 +1,8 @@
---------------------------------------------
-Wii7800 v0.3 release README
---------------------------------------------
+# Wii7800 v0.3 release README
 
 Ported by raz0red
-[http://www.twitchasylum.com]
 
---------------------------------------------
-What is Wii7800?
---------------------------------------------
+[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
 Wii7800 is a port of the ProSystem emulator developed by Greg Stanton. 
 Additional changes developed by Ludovic Jacomme aka Zx-81 (PSP port), Leonis,
@@ -16,26 +11,20 @@ implementation.
 
 [https://home.comcast.net/~gscottstanton/]
 
---------------------------------------------
-Current status
---------------------------------------------
+## Current status
 
 Wii7800 is an ongoing work in progress. For the latest project information
 please visit the following URL:
 
 [http://www.wiibrew.org/wiki/Wii7800]
 
---------------------------------------------
-Known issues
---------------------------------------------
+## Known issues
 
     - Audio still has some minor issues (appears to be related to the 
         resampling algorithm used by ProSystem).
     - High Score cartridge is only compatible with NTSC games.
 
---------------------------------------------
-Installation
---------------------------------------------
+## Installation
 
 To install Wii7800, simply extract the zip file directly to your SD card 
 (retain the hierarchical structure exactly).
@@ -48,9 +37,7 @@ necessary. If you wish to use the BIOS, simply place the NTSC and PAL BIOS
 files in the (/wii7800) directory. The NTSC file must be named, "7800.rom",
 while the PAL file must be named, "7800pal.rom". 
 
---------------------------------------------
-Lightgun Accuracy, etc.
---------------------------------------------
+## Lightgun Accuracy, etc.
 
 The crosshair for the Wii7800 emulator is not perfect. For example you may be
 pointing at something and your shot may register to the right or left. This is
@@ -61,9 +48,7 @@ So, the crosshair at best gets you in approximately the right area, and if you
 miss you need to adjust based on where the shot shows up on the screen 
 (exactly how you do it when there is no crosshair). 
 
---------------------------------------------
-Cartridge/ROM Compatibility 
---------------------------------------------
+## Cartridge/ROM Compatibility 
 
 To find out if a particular cartridge/ROM is compatible with Wii7800, please
 refer to the following page. 
@@ -77,9 +62,7 @@ This page contains a list of compatible ROMs by "hash code".
 Turn on debug information (via the advanced menu) to display the "hash code"
 for ROMs when they are loaded. 
 
---------------------------------------------
-Controls
---------------------------------------------
+## Controls
 
     Wii7800 menu:
     -------------
@@ -171,9 +154,7 @@ Controls
             2              : Right difficulty (if enabled)
             Home           : Display Wii7800 menu (see above)
            
---------------------------------------------
-Wii7800 crashes, code dumps, etc.
---------------------------------------------
+## Wii7800 crashes, code dumps, etc.
 
 If you are having issues with Wii7800, please let me know about it via one of 
 the following locations:
@@ -181,9 +162,7 @@ the following locations:
 [http://www.wiibrew.org/wiki/Talk:Wii7800]
 [http://www.twitchasylum.com/forum/viewtopic.php?t=519]
 
---------------------------------------------
-Special thanks
---------------------------------------------
+## Special thanks
 
 * munky6           : Lead tester
 * Curt Vendel      : Granting permission to use the High Score ROM
@@ -193,12 +172,9 @@ Special thanks
 * Tantric          : Huge improvements to the SDL
 * Team Twiizers    : For enabling homebrew
 
---------------------------------------------
-Change log
---------------------------------------------
+## Change log
 
-03/29/10 (0.3)
----------------------
+### 03/29/10 (0.3)
     - GX based scaler (smoother scrolling in Plutos, Xevious, Motor Psycho)
     - Ability to adjust screen size to any size/dimensions via the
         "Screen Size" option under "Display". If this is entered after 
@@ -213,8 +189,7 @@ Change log
     - Updated menu code, GX rendering of dip switches and debug information
     - Ability to set HBLANK period, Dual-analog support in ProSystem database
 
-06/29/09 (0.2)
--------------------
+### 06/29/09 (0.2)
     - Lightgun support 
     - High score cartridge support
     - Increased accuracy of Maria cycle timing, games now run at close to 
@@ -242,8 +217,7 @@ Change log
         - Plutos has slightly less graphical glitches
     - Fixed save/restore state issue for games that use RIOT timers.        
         
-05/26/09 (0.1)
--------------------
+### 05/26/09 (0.1)
     - Snapshot support, including auto-load/auto-save
     - Optional loading of 7800 BIOS
     - Support for ProSystem emulator database
