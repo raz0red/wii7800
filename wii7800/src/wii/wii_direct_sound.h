@@ -17,5 +17,5 @@
 void InitialiseAudio();
 void StopAudio();
 void ResetAudio();
-void PlaySound( u32 *Buffer, int samples );
+void PlaySound( u8 *Buffer, int samples );
 

@@ -55,24 +55,7 @@ static bool sound_muted = false;
 
 static void wii_storeSound( byte* sample, int length )
 {
-  SDL_AudioCVT audio_convert;
-  SDL_BuildAudioCVT(
-    &audio_convert,
-    AUDIO_U8,
-    1,
-    48000,
-    AUDIO_S16MSB, 
-    2,
-    48000
-    );
-
-  audio_convert.buf = sample;
-  audio_convert.len = length;
-  SDL_ConvertAudio( &audio_convert );
-  PlaySound( (u32*)sample, ( audio_convert.len_cvt / 4 ) );        
-
-  wii_sound_length = length;
-  wii_convert_length = audio_convert.len_cvt;
+  PlaySound( (u8*)sample, length );        
 }
 
 // ----------------------------------------------------------------------------

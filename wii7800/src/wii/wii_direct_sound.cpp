@@ -56,6 +56,9 @@ static int MixerCollect( u8 *outbuffer, int len )
     mixtail += MIXBUFSIZE_WORDS;
   done &= ~0x1f;
 
+  if (!done)
+    return len >> 1;
+
   return done;
 }
 
@@ -72,7 +75,6 @@ static void AudioSwitchBuffers()
 
   DCFlushRange(soundbuffer[whichab], len);
   AUDIO_InitDMA((u32)soundbuffer[whichab], len);
-  AUDIO_StartDMA();
   whichab ^= 1;  
   IsPlaying = 1;   
 }
@@ -89,6 +91,7 @@ void InitialiseAudio()
   AUDIO_RegisterDMACallback( AudioSwitchBuffers );    
   memset(soundbuffer, 0, SOUNDBUFSIZE*2);
   memset(mixbuffer, 0, MIXBUFSIZE_BYTES);
+  AUDIO_StartDMA();
 }
 
 /****************************************************************************
@@ -120,14 +123,16 @@ void ResetAudio()
 * Puts incoming mono samples into mixbuffer
 * Splits mono samples into two channels (stereo)
 ****************************************************************************/
-void PlaySound( u32 *Buffer, int count )
+void PlaySound( u8 *Buffer, int count )
 {
   u32 *dst = (u32 *)mixbuffer;
   int i;
+  u16 sample;
 
   for( i = 0; i < count; i++ )
   {
-    dst[mixhead++] = Buffer[i];
+    sample = ((Buffer[i] * 256) - 128) & 0xffff;    
+    dst[mixhead++] = sample | ( sample << 16);
     if (mixhead == MIXBUFSIZE_WORDS)
       mixhead = 0;
   }
