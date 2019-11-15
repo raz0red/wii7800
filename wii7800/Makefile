@@ -16,36 +16,52 @@ include $(DEVKITPPC)/wii_rules
 # SOURCES is a list of directories containing source code
 # INCLUDES is a list of directories containing extra header files
 #---------------------------------------------------------------------------------
-#TARGET		:=	$(notdir $(CURDIR))
 TARGET      :=  boot
 BUILD		:=	build
-SOURCES		:=	src src/zip src/wii src/wii/common src/wii/common/pngu src/wii/common/FreeTypeGX
-DATA		:=	src/wii/res/fonts src/wii/res/gfx
-INCLUDES	:=	src src/zip src/wii src/wii/common src/wii/common/pngu src/wii/common/FreeTypeGX
+SOURCES		:=	\
+    src \
+    src/zip \
+    src/wii \
+    src/wii/common \
+    src/wii/common/pngu \
+    src/wii/common/FreeTypeGX    
+DATA		:=	\
+    src/wii/res/fonts \
+    src/wii/res/gfx    
+INCLUDES	:=	\
+    src \
+    src/zip \
+    src/wii \
+    src/wii/common \
+    src/wii/common/pngu \
+    src/wii/common/FreeTypeGX \
+    thirdparty/freetype/include \
+    thirdparty/zlib/include \
+    thirdparty/sdl/include \
+    thirdparty/png/include
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-
-CFLAGS	= -g -O1 -Wall $(MACHDEP) $(INCLUDE) -DNOCRYPT -DWII -DBIG_ENDIAN -DWII_BIN2O
+CFLAGS	= -g -O1 -Wall -Wno-format-truncation $(MACHDEP) $(INCLUDE) -DNOCRYPT -DWII -DBIG_ENDIAN -DWII_BIN2O
 #-DLOWTRACE -DDEBUG
 CXXFLAGS	=	$(CFLAGS)
-
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lSDL_ttf -lSDL -lfreetype -lfat -lwiiuse -lwiikeyboard -lbte -logc -lm -lpng -lz -lbz2
-
-#-lSDL_ttf -lSDL -lSDL_image -lpng -ljpeg -lfreetype -lfat -lwiiuse \
-#            -lbte -logc -lz -lm
+LIBS	:=	-lSDL_ttf -lSDL -lfreetype -lfat -lwiiuse -lwiikeyboard -lbte -logc -lm -lpng -lz 
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=
+LIBDIRS	:= \
+    thirdparty/freetype/lib \
+    thirdparty/zlib/lib \
+    thirdparty/sdl/lib \
+    thirdparty/png/lib
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -53,12 +69,9 @@ LIBDIRS	:=
 #---------------------------------------------------------------------------------
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
-
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
-
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 					$(foreach dir,$(DATA),$(CURDIR)/$(dir))
-
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 #---------------------------------------------------------------------------------
@@ -111,17 +124,7 @@ CPPFILES	:=	\
     wii_atari_sdl.cpp \
     wii_atari_snapshot.cpp \
     wii_direct_sound.cpp    
-    
-#    wii_atari_menu.cpp   
-#    wii_app.cpp \
-#    wii_atari.cpp \
-#    wii_config.cpp \
-#    wii_emulation.cpp \
-#    wii_input.cpp \
-#    wii_main.cpp \
-#    wii_sdl.cpp \
-#    wii_snapshot.cpp
-    
+        
 sFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.S)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
@@ -145,18 +148,13 @@ export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					-I$(CURDIR)/$(BUILD) \
-					-I$(LIBOGC_INC) \
-					-I$(LIBOGC_INC)/SDL \
-                    -I$(DEVKITPRO)/portlibs/ppc/include \
-                    -I$(DEVKITPRO)/portlibs/ppc/include/freetype2
-					
-#-Iz:/work/repos/project/sdl-wii/SDL/include
-
+					-I$(LIBOGC_INC)
+										
 #---------------------------------------------------------------------------------
 # build a list of library paths
 #---------------------------------------------------------------------------------
-export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib) \
-					-L$(LIBOGC_LIB) \
+export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(CURDIR)/$(dir)) \
+                    -L$(LIBOGC_LIB) \
                     -L$(DEVKITPRO)/portlibs/ppc/lib
 					
 export OUTPUT	:=	$(CURDIR)/$(TARGET)

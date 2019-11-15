@@ -437,7 +437,7 @@ static void wii_menu_render( TREENODE *menu )
 
         if( value[0] != '\0' )
         {
-          sprintf( buffer2, ": %s", value );
+          snprintf( buffer2, WII_MENU_BUFF_SIZE, ": %s", value );
           
           wii_ft_drawtext( fb, node->value_x, 
             MENU_STARTY + ( ( displayed + 2 ) * MENU_LINESIZE ), 
