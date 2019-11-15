@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include <SDL.h>
 #include "Pokey.h"
-#include "Prosystem.h"
+#include "ProSystem.h"
 #define POKEY_NOTPOLY5 0x80
 #define POKEY_POLY4 0x40
 #define POKEY_PURE 0x20
@@ -101,8 +101,8 @@ static uint r17;
 static byte SKCTL;
 byte RANDOM;
 
-static ulong random_scanline_counter;
-static ulong prev_random_scanline_counter;
+static ullong random_scanline_counter;
+static ullong prev_random_scanline_counter;
 
 static void rand_init(byte *rng, int size, int left, int right, int add)
 {
@@ -183,12 +183,12 @@ byte pokey_GetRegister(word address) {
 
   switch (address) {
     case POKEY_RANDOM:
-      ulong curr_scanline_counter = 
+      ullong curr_scanline_counter = 
         ( random_scanline_counter + prosystem_cycles + prosystem_extra_cycles );
 
       if( SKCTL & SK_RESET )
       {
-        ulong adjust = ( ( curr_scanline_counter - prev_random_scanline_counter ) >> 2 );
+        ullong adjust = ( ( curr_scanline_counter - prev_random_scanline_counter ) >> 2 );
         r9 = (uint)((adjust + r9) % 0x001ff);
         r17 = (uint)((adjust + r17) % 0x1ffff);
       }

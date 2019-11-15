@@ -10,7 +10,7 @@ More info : http://frontier-dev.net
 #include <stdio.h>
 #include <malloc.h>
 #include "pngu.h"
-#include <png/png.h>
+#include <png.h>
 
 
 // Constants

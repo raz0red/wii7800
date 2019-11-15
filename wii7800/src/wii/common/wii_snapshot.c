@@ -23,6 +23,7 @@ distribution.
 */
 
 #include <stdio.h>
+#include <sys/iosupport.h>
 
 #include "wii_app.h"
 #include "wii_snapshot.h"
