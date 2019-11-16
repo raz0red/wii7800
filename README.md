@@ -1,4 +1,4 @@
-# Wii7800 v0.3 release README
+# Wii7800
 
 Ported by raz0red
 
@@ -173,6 +173,20 @@ the following locations:
 * Team Twiizers    : For enabling homebrew
 
 ## Change log
+
+### TBD (0.4)
+    - Reworked audio integration (resolves audio clipping and popping)
+    - Refactored project layout. Now includes third party libraries, which
+        should reduce effort to build against latest devkitPro releases
+    - Updated to latest versions of devkitPPC (r34) and libogc (1.8.23)
+    - Merged PR#7 by arocchi
+        Fixes to make wii7800 work with latest DevKit
+    - Merged PR#3 by clobber
+        Fix bit shift overflow when reading cartridge size from header
+    - Merged PR#2 by clobber
+        Update internal ROM database
+    - Merged PR#1 by clobber
+        Correctly load supergame cart types
 
 ### 03/29/10 (0.3)
     - GX based scaler (smoother scrolling in Plutos, Xevious, Motor Psycho)
