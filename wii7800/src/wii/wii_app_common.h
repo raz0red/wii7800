@@ -1,8 +1,7 @@
 /*
 Wii7800 : Port of the ProSystem Emulator for the Wii
 
-Copyright (C) 2010
-raz0red (www.twitchasylum.com)
+Copyright (C) 2010 raz0red
 */
 
 #ifndef WII_APP_COMMON_H

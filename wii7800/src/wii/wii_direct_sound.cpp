@@ -131,7 +131,7 @@ void PlaySound( u8 *Buffer, int count )
 
   for( i = 0; i < count; i++ )
   {
-    sample = ((Buffer[i] * 256) - 128) & 0xffff;    
+    sample = ((Buffer[i] << 8) - 1) & 0xffff;    
     dst[mixhead++] = sample | ( sample << 16);
     if (mixhead == MIXBUFSIZE_WORDS)
       mixhead = 0;
