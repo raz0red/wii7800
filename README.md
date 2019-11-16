@@ -57,9 +57,6 @@ Note: There are many dumps of ROMs that are incompatible with Wii7800.
 However, there is typically a dump of the cartridge that does work. 
 This page contains a list of compatible ROMs by "hash code".
 
-Turn on debug information (via the advanced menu) to display the "hash code"
-for ROMs when they are loaded. 
-
 ## Controls
 
     Wii7800 menu:
