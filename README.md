@@ -169,7 +169,7 @@ the following locations:
 
 ## Change log
 
-### TBD (0.4)
+### 11/16/19 (0.4)
     - Reworked audio integration (resolves audio clipping and popping)
     - Refactored project layout. Now includes third party libraries, which
         should reduce effort to build against latest devkitPro releases
