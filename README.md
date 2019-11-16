@@ -20,8 +20,6 @@ please visit the following URL:
 
 ## Known issues
 
-    - Audio still has some minor issues (appears to be related to the 
-        resampling algorithm used by ProSystem).
     - High Score cartridge is only compatible with NTSC games.
 
 ## Installation
