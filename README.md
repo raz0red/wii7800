@@ -4,7 +4,7 @@ Ported by raz0red
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
-Wii7800 is a port of the ProSystem emulator developed by Greg Stanton. 
+Wii7800 is a Nintendo Wii port of the ProSystem emulator developed by Greg Stanton. 
 Additional changes developed by Ludovic Jacomme aka Zx-81 (PSP port), Leonis,
 and gdement. Portions of the Pokey code were adapted from the MAME 
 implementation.
