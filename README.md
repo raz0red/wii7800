@@ -17,7 +17,7 @@ implementation.
 ## Current status
 
 Wii7800 is an ongoing work in progress. For the latest project information
-please visit the following URL:
+please visit the [Wii7800 page](http://www.wiibrew.org/wiki/Wii7800) on WiiBrew:
 
 [http://www.wiibrew.org/wiki/Wii7800]
 
