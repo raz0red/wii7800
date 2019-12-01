@@ -35,8 +35,9 @@ INCLUDES	:=	\
     src/wii/common \
     src/wii/common/pngu \
     src/wii/common/FreeTypeGX \
-    thirdparty/sdl/include \
-    thirdparty/freetype/include
+    thirdparty/freetype/include \
+    thirdparty/sdl/SDL/include \
+    thirdparty/sdl/SDL_ttf/include
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -62,7 +63,9 @@ LIBS	:=	-lSDL_ttf -lSDL -lfreetype -lfat -lwiiuse -lwiikeyboard -lbte \
 #---------------------------------------------------------------------------------
 LIBDIRS	:= \
     thirdparty/sdl/lib \
-    thirdparty/freetype/lib
+    thirdparty/freetype/lib \
+    thirdparty/sdl/SDL/lib \
+    thirdparty/sdl/SDL_ttf/lib
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

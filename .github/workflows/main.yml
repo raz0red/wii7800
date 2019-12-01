@@ -9,6 +9,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
     - run: docker run raz0red/devkitppc /opt/devkitpro/pacman/bin/pacman -Q 
     - run: docker run -v $(pwd):/source raz0red/devkitppc /source/dist.sh
     - uses: actions/upload-artifact@v1
