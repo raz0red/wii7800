@@ -433,9 +433,9 @@ bool prosystem_Load(const std::string filename) {
     }
   }
   offset += 16;
-  //byte version = loc_buffer[offset++];
+  byte version = loc_buffer[offset++];
   
-  //uint date = 0;
+  uint date = 0;
   for(index = 0; index < 4; index++) {
   }
   offset += 4;

@@ -38,7 +38,7 @@ uint archive_GetUncompressedFileSize(std::string filename) {
   
   unzFile file = unzOpen(filename.c_str( ));
   if(file == NULL) {
-    logger_LogInfo("Filename " + filename + " is not a valid zip file.", ARCHIVE_SOURCE);
+    logger_LogInfo("Filename " + filename + " is not a valid zip file. (1)", ARCHIVE_SOURCE);
     return 0;
   }
 
@@ -80,7 +80,7 @@ bool archive_Uncompress(std::string filename, byte* data, uint size) {
 
   unzFile file = unzOpen(filename.c_str( ));
   if(file == NULL) {
-    logger_LogInfo("Filename " + filename + " is not a valid zip file.", ARCHIVE_SOURCE);
+    logger_LogInfo("Filename " + filename + " is not a valid zip file. (2)", ARCHIVE_SOURCE);
     return false;
   }
 

@@ -8,6 +8,9 @@ Copyright (C) 2010 raz0red
 #include "Database.h"
 #include "Sound.h"
 #include "Timer.h"
+#ifdef DEBUG
+#include "Logger.h"
+#endif
 
 #include <gccore.h>
 
@@ -160,8 +163,11 @@ void wii_handle_free_resources()
   ClearFontData();
 
   SDL_Quit();
+  
+#ifdef DEBUG
+  logger_Release();
+#endif  
 }
-
 /*
  * Runs the application (main loop)
  */

@@ -27,7 +27,7 @@
 
 byte logger_level = LOGGER_LEVEL_DEBUG;
 //# if 0 //LUDO:
-// static FILE* logger_file = NULL;
+static FILE* logger_file = NULL;
 //# else
 //# include <stdio.h>
 //# define logger_file stdout
@@ -37,8 +37,14 @@ byte logger_level = LOGGER_LEVEL_DEBUG;
 bool wii_lowtrace = false;
 #endif
 
-#ifdef DEBUG
+extern "C" {
+void logger_LogInfo(char *message) {
+  logger_LogInfo(std::string(message));
+}
+}
 
+
+#ifdef DEBUG
 // ----------------------------------------------------------------------------
 // GetTime
 // ----------------------------------------------------------------------------
@@ -157,4 +163,5 @@ void logger_Release( ) {
     fclose(logger_file);
   }
 }
+
 # endif

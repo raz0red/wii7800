@@ -35,7 +35,8 @@ INCLUDES	:=	\
     src/wii/common \
     src/wii/common/pngu \
     src/wii/common/FreeTypeGX \
-    thirdparty/sdl/include
+    thirdparty/sdl/include \
+    thirdparty/freetype/include
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -44,6 +45,7 @@ CFLAGS	= -g -O1 -Wall $(MACHDEP) $(INCLUDE) \
           -DNOCRYPT -DWII -DBIG_ENDIAN -DWII_BIN2O \
           -Wno-format-truncation \
           -Wno-narrowing
+          
 #-DLOWTRACE -DDEBUG
 CXXFLAGS	=	$(CFLAGS)
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
@@ -59,7 +61,8 @@ LIBS	:=	-lSDL_ttf -lSDL -lfreetype -lfat -lwiiuse -lwiikeyboard -lbte \
 # include and lib
 #---------------------------------------------------------------------------------
 LIBDIRS	:= \
-    thirdparty/sdl/lib
+    thirdparty/sdl/lib \
+    thirdparty/freetype/lib
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
