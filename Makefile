@@ -62,7 +62,6 @@ LIBS	:=	-lSDL_ttf -lSDL -lfreetype -lfat -lwiiuse -lwiikeyboard -lbte \
 # include and lib
 #---------------------------------------------------------------------------------
 LIBDIRS	:= \
-    thirdparty/sdl/lib \
     thirdparty/freetype/lib \
     thirdparty/sdl/SDL/lib \
     thirdparty/sdl/SDL_ttf/lib
@@ -153,8 +152,7 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					-I$(CURDIR)/$(BUILD) \
 					-I$(LIBOGC_INC) \
-					-I$(DEVKITPRO)/portlibs/ppc/include \
-					-I$(DEVKITPRO)/portlibs/ppc/include/freetype2
+					-I$(DEVKITPRO)/portlibs/ppc/include
 										
 #---------------------------------------------------------------------------------
 # build a list of library paths
