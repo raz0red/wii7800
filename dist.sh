@@ -29,15 +29,15 @@ cd $SCRIPTPATH || { fail 'Error changing to script directory.'; }
 echo "Building Wii7800..."
 make || { fail 'Error building Wii7800.'; }
 
-# Create dist directory
-if [ ! -d $DIST_DIR ]; then
-    echo "Creating dist directory..."
-    mkdir -p $DIST_DIR || { fail 'Error creating dist directory.'; }
+# Clear dist directory
+if [ -d $DIST_DIR ]; then
+    echo "Clearing dist directory..."
+    rm -rf $DIST_DIR || { fail 'Error clearing dist directory.'; }
 fi
 
-# Clear dist directory
-echo "Clearing dist directory..."
-rm -rf $DIST_DIR || { fail 'Error clearing dist directory.'; }
+# Create dist directory
+echo "Creating dist directory..."
+mkdir -p $DIST_DIR || { fail 'Error creating dist directory.'; }
 
 # Copy layout
 echo "Copy layout..."
