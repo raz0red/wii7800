@@ -163,6 +163,7 @@ the following locations:
 
 ## Special thanks
 
+* NeoRame          : Icon
 * munky6           : Lead tester
 * Curt Vendel      : Granting permission to use the High Score ROM
 * GroovyBee        : Technical assistance
