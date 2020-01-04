@@ -61,7 +61,7 @@
 #define HSMODE_ENABLED_SNAPSHOTS 2
 
 // Default screen size
-#define DEFAULT_SCREEN_X 548 // (7:8), TODO: also provide 640 (1:1)
+#define DEFAULT_SCREEN_X 548 // (6:7)
 #define DEFAULT_SCREEN_Y 480
 
 // vsync modes

@@ -66,9 +66,6 @@
 // they are changed
 #define DIFF_DISPLAY_LENGTH 5
 
-#define DEFAULT_SCREEN_X 548 // (7:8),
-#define DEFAULT_SCREEN_Y 480
-
 /** The default screen sizes */
 static const screen_size default_screen_sizes[] = {
     {DEFAULT_SCREEN_X, DEFAULT_SCREEN_Y, "Atari 7800 PAR (6:7)"},
