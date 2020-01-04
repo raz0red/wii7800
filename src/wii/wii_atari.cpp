@@ -271,6 +271,10 @@ void wii_handle_init() {
     sound_Initialize();
     sound_SetMuted(true);
 
+    // Set widescreen value after config has been loaded
+    WII_SetWidescreen(
+        wii_full_widescreen == WS_AUTO ? is_widescreen : wii_full_widescreen);    
+
     // Initialize the Atari menu
     wii_atari_menu_init();
 }
