@@ -84,14 +84,14 @@ extern bool cartridge_dualanalog;
  *
  * return   Whether the load was successful
  */
-extern bool cartridge_LoadHighScoreCart();
+bool cartridge_LoadHighScoreCart();
 
 /*
  * Saves the high score cartridge SRAM 
  *
  * return   Whether the save was successful
  */
-extern bool cartridge_SaveHighScoreSram();
+bool cartridge_SaveHighScoreSram();
 
 // Whether the cartridge has accessed the high score ROM (indicates that the
 // SRAM should be persisted when the cartridge is unloaded)

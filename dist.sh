@@ -3,13 +3,13 @@
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 DATE="$( date '+%Y%m%d%H%S' )"
 DIST_DIR=$SCRIPTPATH/dist
-LAYOUT_DIR=$SCRIPTPATH/src/wii/res/layout/
+LAYOUT_DIR=$SCRIPTPATH/res/layout/
 BOOT_DOL_SRC=$SCRIPTPATH/boot.dol
-BOOT_DOL_DEST=$DIST_DIR/apps/WII7800
+BOOT_DOL_DEST=$DIST_DIR/apps/wii7800
 BOOT_ELF_SRC=$SCRIPTPATH/boot.elf
 BOOT_ELF_DEST=$DIST_DIR
-META_FILE=$DIST_DIR/apps/WII7800/meta.xml
-SDL_DIR=$SCRIPTPATH/thirdparty/sdl
+META_FILE=$DIST_DIR/apps/wii7800/meta.xml
+EMUCOMMON_DIR=$SCRIPTPATH/wii-emucommon
 
 #
 # Function that is invoked when the script fails.
@@ -22,10 +22,9 @@ function fail() {
     exit 1
 }
 
-# Build SDL
-echo "Building SDL..."
-cd $SDL_DIR || { fail 'Error changing to SDL directory.'; }
-make || { fail 'Error building SDL.'; }
+# Build wii-emucommon
+echo "Building wii-emucommon..."
+$EMUCOMMON_DIR/dist.sh || { fail 'Error building wii-emucommon.'; }
 
 # Change to script directory
 echo "Changing to script directory..."
@@ -71,8 +70,8 @@ VERSION_NO_DOTS="${VERSION//./_}"
 DIST_FILE=wii7800-$VERSION_NO_DOTS.zip
 cd $DIST_DIR || { fail 'Error changing to distribution directory.'; }
 zip -r $DIST_FILE . || { fail 'Error creating zip file.'; }
-rm -rf $DIST_DIR/WII7800 \
-    || { fail 'Error deleting WII7800 directory in dist.'; }
+rm -rf $DIST_DIR/wii7800 \
+    || { fail 'Error deleting wii7800 directory in dist.'; }
 rm -rf $DIST_DIR/apps \
     || { fail 'Error deleting apps directory in dist.'; }
 cp $BOOT_ELF_SRC $BOOT_ELF_DEST || { fail 'Error copying boot.elf.'; }

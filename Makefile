@@ -21,23 +21,22 @@ BUILD		:=	build
 SOURCES		:=	\
     src \
     src/zip \
-    src/wii \
-    src/wii/common \
-    src/wii/common/pngu \
-    src/wii/common/FreeTypeGX    
+    src/wii 
 DATA		:=	\
-    src/wii/res/fonts \
-    src/wii/res/gfx    
+    res/fonts \
+    res/gfx
 INCLUDES	:=	\
+    wii-emucommon/include \
+    wii-emucommon/netprint/include \
+    wii-emucommon/pngu/include \
+    wii-emucommon/FreeTypeGX/include \
+    wii-emucommon/i18n/include \
+    wii-emucommon/sdl/SDL/include \
+    wii-emucommon/sdl/SDL_ttf/include \
+    wii-emucommon/sdl/SDL_image/include \
     src \
     src/zip \
-    src/wii \
-    src/wii/common \
-    src/wii/common/pngu \
-    src/wii/common/FreeTypeGX \
-    thirdparty/freetype/include \
-    thirdparty/sdl/SDL/include \
-    thirdparty/sdl/SDL_ttf/include
+    src/wii
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -54,17 +53,18 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lSDL_ttf -lSDL -lfreetype -lfat -lwiiuse -lwiikeyboard -lbte \
-            -logc -lm -lpng -lz -lbz2
+LIBS	:=	-lSDL -lemucommon -ltinysmb -lSDL_ttf -lSDL_image -lpng -lfreetype \
+            -lwiiuse -lfat -lbte -logc -lz -lbz2 -lm -lwiikeyboard 
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
 LIBDIRS	:= \
-    thirdparty/freetype/lib \
-    thirdparty/sdl/SDL/lib \
-    thirdparty/sdl/SDL_ttf/lib
+    wii-emucommon/ \
+    wii-emucommon/sdl/SDL/lib \
+    wii-emucommon/sdl/SDL_ttf/lib \
+    wii-emucommon/sdl/SDL_image/lib
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -82,26 +82,9 @@ export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 #---------------------------------------------------------------------------------
 CFILES		:= \
     zip.c \
-    unzip.c \
-    pngu.c \
-    wii_app.c \
-    wii_config.c \
-    wii_file_io.c \
-    wii_freetype.c \
-    wii_gx.c \
-    wii_hash.c \
-    wii_hw_buttons.c \
-    wii_input.c \
-    wii_main.c \
-    wii_resize_screen.c \
-    wii_sdl.c \
-    wii_snapshot.c \
-    wii_util.c \
-    wii_video.c
+    unzip.c
 	
 CPPFILES	:=	\
-    FreeTypeGX.cpp \
-    Metaphrasis.cpp \
     Archive.cpp \
     Bios.cpp \
     Cartridge.cpp \
@@ -152,7 +135,8 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					-I$(CURDIR)/$(BUILD) \
 					-I$(LIBOGC_INC) \
-					-I$(DEVKITPRO)/portlibs/ppc/include
+					-I$(DEVKITPRO)/portlibs/ppc/include \
+					-I$(DEVKITPRO)/portlibs/ppc/include/freetype2
 										
 #---------------------------------------------------------------------------------
 # build a list of library paths

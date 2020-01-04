@@ -91,7 +91,7 @@ static char msg[512];
  * Checks to see if the High Score ROM has been accessed via known entry 
  * points. This is necessary due to the fact that some ROMs (Xenophobe, etc.)
  * overwrite SRAM of the high score cart. In such cases, they don't ever 
- * access the high score cartrisge. By setting a flag, we know when to persist
+ * access the high score cartridge. By setting a flag, we know when to persist
  * changes to SRAM
  */
 static inline void sally_checkHighScoreSet()

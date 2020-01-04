@@ -1,0 +1,9 @@
+build
+dist
+boot.*
+settings.json
+*.ncb
+*.sln
+*.suo
+*.vcproj*
+c_cpp_properties.*
