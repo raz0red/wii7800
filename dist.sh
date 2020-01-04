@@ -70,8 +70,8 @@ VERSION_NO_DOTS="${VERSION//./_}"
 DIST_FILE=wii7800-$VERSION_NO_DOTS.zip
 cd $DIST_DIR || { fail 'Error changing to distribution directory.'; }
 zip -r $DIST_FILE . || { fail 'Error creating zip file.'; }
-rm -rf $DIST_DIR/WII7800 \
-    || { fail 'Error deleting WII7800 directory in dist.'; }
+rm -rf $DIST_DIR/wii7800 \
+    || { fail 'Error deleting wii7800 directory in dist.'; }
 rm -rf $DIST_DIR/apps \
     || { fail 'Error deleting apps directory in dist.'; }
 cp $BOOT_ELF_SRC $BOOT_ELF_DEST || { fail 'Error copying boot.elf.'; }
