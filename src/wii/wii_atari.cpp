@@ -66,6 +66,19 @@
 // they are changed
 #define DIFF_DISPLAY_LENGTH 5
 
+#define DEFAULT_SCREEN_X 548 // (7:8), TODO: also provide 640 (1:1)
+#define DEFAULT_SCREEN_Y 480
+
+/** The default screen sizes */
+static const screen_size default_screen_sizes[] = {
+    {DEFAULT_SCREEN_X, DEFAULT_SCREEN_Y, "Atari 7800 PAR (7:8)"},
+    {640, DEFAULT_SCREEN_Y, "Square Pixels (1:1)"}
+};
+
+/** The default screen size count */
+static int default_screen_size_count =
+    sizeof(default_screen_sizes) / sizeof(screen_size);
+
 /** The palette (8-bit) */
 byte atari_pal8[256] = {0};
 /** Whether to flash the screen */
@@ -168,6 +181,17 @@ extern bool dbg_cycle_stealing;
 
 static float wii_fps_counter;
 static int wii_dbg_scanlines;
+
+/**
+ * Returns the default screen sizes
+ * 
+ * @param   sizes (out) The array of screen sizes
+ * @param   size_count (out) The count of screen sizes
+ */
+void wii_get_default_screen_sizes(const screen_size** sizes, int* size_count) {
+    *sizes = default_screen_sizes;
+    *size_count = default_screen_size_count;
+}
 
 /**
  * Returns the current roms directory

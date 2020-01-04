@@ -35,6 +35,7 @@
 #define WII_ATARI_H
 
 #include <gctypes.h>
+#include "wii_resize_screen.h"
 
 // Dimensions of the surface that is being written to
 // by the emulator
@@ -177,4 +178,12 @@ void wii_atari_pause(bool pause);
  * Renders the current frame to the Wii
  */
 void wii_atari_put_image_gu_normal();
+
+/**
+ * Returns the default screen sizes
+ * 
+ * @param   sizes (out) The array of screen sizes
+ * @param   size_count (out) The count of screen sizes
+ */
+void wii_get_default_screen_sizes(const screen_size** sizes, int* size_count);
 #endif
