@@ -1,9 +1,35 @@
-/*
-Wii7800 : Port of the ProSystem Emulator for the Wii
-
-Copyright (C) 2010 raz0red
-*/
-
+/*--------------------------------------------------------------------------*\
+|                                                                            |
+|     __      __.__.___________  ______ _______  _______                     |
+|    /  \    /  \__|__\______  \/  __  \\   _  \ \   _  \                    |
+|    \   \/\/   /  |  |   /    />      </  /_\  \/  /_\  \                   |
+|     \        /|  |  |  /    //   --   \  \_/   \  \_/   \                  |
+|      \__/\  / |__|__| /____/ \______  /\_____  /\_____  /                  |
+|           \/                        \/       \/       \/                   |
+|                                                                            |
+|    Wii7800 by raz0red                                                      |
+|    Wii port of the ProSystem emulator developed by Greg Stanton            |
+|                                                                            |
+|    [github.com/raz0red/wii7800]                                            |
+|                                                                            |
++----------------------------------------------------------------------------+
+|                                                                            |
+|    This program is free software; you can redistribute it and/or           |
+|    modify it under the terms of the GNU General Public License             |
+|    as published by the Free Software Foundation; either version 2          |
+|    of the License, or (at your option) any later version.                  |
+|                                                                            |
+|    This program is distributed in the hope that it will be useful,         |
+|    but WITHOUT ANY WARRANTY; without even the implied warranty of          |
+|    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           |
+|    GNU General Public License for more details.                            |
+|                                                                            |
+|    You should have received a copy of the GNU General Public License       |
+|    along with this program; if not, write to the Free Software             |
+|    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA           |
+|    02110-1301, USA.                                                        |
+|                                                                            |
+\*--------------------------------------------------------------------------*/
 
 #ifndef WII_ATARI_H
 #define WII_ATARI_H
@@ -34,7 +60,7 @@ Copyright (C) 2010 raz0red
 #define HSMODE_ENABLED_SNAPSHOTS 2
 
 // Default screen size
-#define DEFAULT_SCREEN_X 640
+#define DEFAULT_SCREEN_X 548 // (7:8), TODO: also provide 640 (1:1)
 #define DEFAULT_SCREEN_Y 480
 
 // vsync modes
@@ -53,74 +79,102 @@ typedef unsigned int uint;
 typedef unsigned char uchar;
 typedef unsigned long long ullong;
 
-// The scanline that the lightgun shot occurred at
+/** The scanline that the lightgun shot occurred at */
 extern int lightgun_scanline;
-// The cycle that the lightgun shot occurred at
+/** The cycle that the lightgun shot occurred at */
 extern float lightgun_cycle;
-// Whether the lightgun is enabled for the current cartridge
+/** Whether the lightgun is enabled for the current cartridge */
 extern bool lightgun_enabled;
-// Whether this is a test frame
+/** Whether this is a test frame */
 extern bool wii_testframe;
 
-// Whether to flash the screen 
+/** Whether to flash the screen */
 extern BOOL wii_lightgun_flash;
-// Whether to display a crosshair for the lightgun
+/** Whether to display a crosshair for the lightgun */
 extern BOOL wii_lightgun_crosshair;
-// Whether wsync is enabled/disabled
+/** Whether wsync is enabled/disabled */
 extern u8 wii_cart_wsync;
-// Whether cycle stealing is enabled/disabled
+/** Whether cycle stealing is enabled/disabled */
 extern u8 wii_cart_cycle_stealing;
-// Whether high score cart is enabled
+/** Whether high score cart is enabled */
 extern BOOL wii_hs_enabled;
-// What mode the high score cart is in
+/** What mode the high score cart is in */
 extern BOOL wii_hs_mode;
-// Whether to swap buttons
+/** Whether to swap buttons */
 extern BOOL wii_swap_buttons;
-// Whether the difficulty switches are enabled
+/** Whether the difficulty switches are enabled */
 extern BOOL wii_diff_switch_enabled;
-// When to display the difficulty switches
+/** When to display the difficulty switches */
 extern BOOL wii_diff_switch_display;
-// Whether to display debug info (FPS, etc.)
+/** Whether to display debug info (FPS, etc.) */
 extern short wii_debug;
-// The maximum frame rate
+/** The maximum frame rate */
 extern int wii_max_frame_rate;
-// What is the display size?
-extern u8 wii_scale;
-// The screen X size
+/** The screen X size */
 extern int wii_screen_x;
-// The screen Y size
+/** The screen Y size */
 extern int wii_screen_y;
-// Auto load snapshot?
-extern BOOL wii_auto_load_snapshot;
-// Auto save snapshot?
-extern BOOL wii_auto_save_snapshot;
+/** Whether to filter the display */
+extern BOOL wii_filter;
+/** Whether to use the GX/VI scaler */
+extern BOOL wii_gx_vi_scaler;
 
-/*
+/**
+ * Returns the current roms directory
+ *
+ * @return  The current roms directory
+ */
+char* wii_get_roms_dir();
+
+/**
+ * Returns the saves directory
+ *
+ * @return  The saves directory
+ */
+char* wii_get_saves_dir();
+
+/**
+ * Sets the current roms directory
+ *
+ * @param   newDir The new roms directory
+ */
+void wii_set_roms_dir(const char* newDir);
+
+/**
+ * Updates whether the Wii is in widescreen mode
+ */
+void wii_update_widescreen();
+
+/**
  * Loads the specified ROM
  *
- * filename     The filename of the ROM
- * loadbios     Whether or not to load the Atari BIOS
- *
- * return   Whether the load was successful
+ * @param   filename The filename of the ROM
+ * @param   loadbios Whether or not to load the Atari BIOS
+ * @return  Whether the load was successful
  */
-extern bool wii_atari_load_rom( char *filename, bool loadbios = true ) ;
+bool wii_atari_load_rom(char* filename, bool loadbios = true);
 
-/*
+/**
  * Resets the keyboard (control) information
  */
-extern void wii_reset_keyboard_data();
+void wii_reset_keyboard_data();
 
-/*
+/**
  * Runs the main Atari emulator loop
  *
- * testframes   The number of testframes to run (for loading saves)
+ * @param   testframes The number of testframes to run (for loading saves)
  */
-extern void wii_atari_main_loop( int testframes = -1 );
+void wii_atari_main_loop(int testframes = -1);
 
-/*
+/**
  * Pauses the emulator
  *
- * pause    Whether to pause or resume
+ * @param   pause Whether to pause or resume
  */
-extern void wii_atari_pause( bool pause );
+void wii_atari_pause(bool pause);
+
+/**
+ * Renders the current frame to the Wii
+ */
+void wii_atari_put_image_gu_normal();
 #endif

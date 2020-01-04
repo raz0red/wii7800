@@ -1,8 +1,35 @@
-/*
-Wii7800 : Port of the ProSystem Emulator for the Wii
-
-Copyright (C) 2010 raz0red
-*/
+/*--------------------------------------------------------------------------*\
+|                                                                            |
+|     __      __.__.___________  ______ _______  _______                     |
+|    /  \    /  \__|__\______  \/  __  \\   _  \ \   _  \                    |
+|    \   \/\/   /  |  |   /    />      </  /_\  \/  /_\  \                   |
+|     \        /|  |  |  /    //   --   \  \_/   \  \_/   \                  |
+|      \__/\  / |__|__| /____/ \______  /\_____  /\_____  /                  |
+|           \/                        \/       \/       \/                   |
+|                                                                            |
+|    Wii7800 by raz0red                                                      |
+|    Wii port of the ProSystem emulator developed by Greg Stanton            |
+|                                                                            |
+|    [github.com/raz0red/wii7800]                                            |
+|                                                                            |
++----------------------------------------------------------------------------+
+|                                                                            |
+|    This program is free software; you can redistribute it and/or           |
+|    modify it under the terms of the GNU General Public License             |
+|    as published by the Free Software Foundation; either version 2          |
+|    of the License, or (at your option) any later version.                  |
+|                                                                            |
+|    This program is distributed in the hope that it will be useful,         |
+|    but WITHOUT ANY WARRANTY; without even the implied warranty of          |
+|    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           |
+|    GNU General Public License for more details.                            |
+|                                                                            |
+|    You should have received a copy of the GNU General Public License       |
+|    along with this program; if not, write to the Free Software             |
+|    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA           |
+|    02110-1301, USA.                                                        |
+|                                                                            |
+\*--------------------------------------------------------------------------*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,753 +40,869 @@ Copyright (C) 2010 raz0red
 #include "wii_app_common.h"
 #include "wii_main.h"
 #include "wii_app.h"
+#include "wii_gx.h"
 #include "wii_resize_screen.h"
 #include "wii_sdl.h"
 #include "wii_snapshot.h"
 #include "wii_util.h"
+#include "fileop.h"
+#include "networkop.h"
 
+#include "wii_app_common.h"
 #include "wii_atari.h"
 #include "wii_atari_emulation.h"
 #include "wii_atari_snapshot.h"
 
-extern void WII_VideoStart();
-extern void WII_VideoStop();
+#include "gettext.h"
+
+/** SDL Video external references */
+extern "C" {
+void WII_VideoStart();
+void WII_VideoStop();
+}
+
 extern int PauseAudio(int Switch);
 extern void ResetAudio();
 
-// Have we read the games list yet?
+/** Whether we are loading a game */
+BOOL loading_game = FALSE;
+/** Have we read the games list yet? */
 static BOOL games_read = FALSE;
-// Have we read the save state list yet?
-static BOOL save_states_read = FALSE;
-// The index of the last rom that was run
+/** Whether we are pending a drive mount */
+static BOOL mount_pending = TRUE;
+/** The index of the last rom that was run */
 static s16 last_rom_index = 1;
+/** The roms node */
+static TREENODE* roms_menu;
 
 // Forward refs
-static void wii_read_save_state_list( TREENODE *menu );
-static void wii_read_game_list( TREENODE *menu );
+static void wii_read_game_list(TREENODE* menu);
 
-/*
+/**
+ * Returns the space node type
+ *
+ * @return  The spacer node type
+ */
+int wii_get_nodetype_spacer() {
+    return NODETYPE_SPACER;
+}
+
+/**
+ * Returns the rom node type
+ *
+ * @return  The rom node type
+ */
+int wii_get_nodetype_rom() {
+    return NODETYPE_ROM;
+}
+
+/**
  * Initializes the Atari menu
  */
-void wii_atari_menu_init()
-{  
-  //
-  // The root menu
-  //
+void wii_atari_menu_init() {
+    //
+    // The root menu
+    //
 
-  wii_menu_root = wii_create_tree_node( NODETYPE_ROOT, "root" );
+    wii_menu_root = wii_create_tree_node(NODETYPE_ROOT, "root");
 
-  TREENODE* child = NULL;
-  child = wii_create_tree_node( NODETYPE_RESUME, "Resume" );
-  wii_add_child( wii_menu_root, child );
+    TREENODE* child = NULL;
+    child = wii_create_tree_node(NODETYPE_RESUME, "Resume");
+    wii_add_child(wii_menu_root, child);
 
-  child = NULL;
-  child = wii_create_tree_node( NODETYPE_RESET, "Reset" );
-  wii_add_child( wii_menu_root, child );
+    child = NULL;
+    child = wii_create_tree_node(NODETYPE_RESET, "Reset");
+    wii_add_child(wii_menu_root, child);
 
-  child = wii_create_tree_node( NODETYPE_LOAD_ROM, "Load cartridge" );
-  wii_add_child( wii_menu_root, child );
+    child = wii_create_tree_node(NODETYPE_LOAD_ROM, "Load cartridge");
+    roms_menu = child;
+    wii_add_child(wii_menu_root, child);
 
-  child = wii_create_tree_node( NODETYPE_SPACER, "" );
-  wii_add_child( wii_menu_root, child );
+    //
+    // Save state management
+    //
 
-  //
-  // Snapshot management
-  //
+    child =
+        wii_create_tree_node(NODETYPE_CARTRIDGE_SAVE_STATES_SPACER, "");
+    wii_add_child(wii_menu_root, child);
 
-  TREENODE *state = wii_create_tree_node( 
-    NODETYPE_SNAPSHOT_MANAGEMENT, "Save state management" );
-  wii_add_child( wii_menu_root, state );
+    TREENODE* states =
+        wii_create_tree_node(NODETYPE_CARTRIDGE_SAVE_STATES, "Save states");
+    wii_add_child(wii_menu_root, states);
 
-  child = wii_create_tree_node( NODETYPE_AUTO_LOAD_SNAPSHOT, 
-    "Auto load " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( state, child );
+    child = wii_create_tree_node(NODETYPE_CARTRIDGE_SAVE_STATES_SLOT, "Slot");
+    wii_add_child(states, child);
 
-  child = wii_create_tree_node( NODETYPE_AUTO_SAVE_SNAPSHOT, 
-    "Auto save " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( state, child );
+    child = wii_create_tree_node(NODETYPE_SPACER, "");
+    wii_add_child(states, child);
 
-  child = wii_create_tree_node( NODETYPE_SPACER, "" );
-  wii_add_child( state, child );
+    child = wii_create_tree_node(NODETYPE_SAVE_STATE, "Save state");
+    wii_add_child(states, child);
 
-  child = wii_create_tree_node( NODETYPE_LOAD_SNAPSHOT, 
-    "Load saved state" );
-  wii_add_child( state, child );
+    child = wii_create_tree_node(NODETYPE_LOAD_STATE, "Load state");
+    wii_add_child(states, child);
 
-  child = wii_create_tree_node( NODETYPE_SPACER, "" );
-  wii_add_child( state, child );
+    child = wii_create_tree_node(NODETYPE_DELETE_STATE, "Delete state");
+    wii_add_child(states, child);    
 
-  child = wii_create_tree_node( NODETYPE_SAVE_SNAPSHOT, 
-    "Save state (current game)" );
-  wii_add_child( state, child );
+    //
+    // The advanced menu
+    //
 
-  child = wii_create_tree_node( NODETYPE_DELETE_SNAPSHOT, 
-    "Delete saved state (current game)" );
-  wii_add_child( state, child );
+    child = wii_create_tree_node(NODETYPE_SPACER, "");
+    wii_add_child(wii_menu_root, child);
 
-  child = wii_create_tree_node( NODETYPE_SPACER, "" );
-  wii_add_child( wii_menu_root, child );
+    TREENODE* advanced = wii_create_tree_node(NODETYPE_ADVANCED, "Advanced");
+    wii_add_child(wii_menu_root, advanced);
 
-  //
-  // The display settings menu
-  //
+    //
+    // The display settings menu
+    //
 
-  TREENODE *display = wii_create_tree_node( NODETYPE_DISPLAY_SETTINGS, 
-    "Display settings" );
-  wii_add_child( wii_menu_root, display );
+    TREENODE* display =
+        wii_create_tree_node(NODETYPE_DISPLAY_SETTINGS, "Video settings");
+    wii_add_child(advanced, display);
 
-  child = wii_create_tree_node( NODETYPE_RESIZE_SCREEN, 
-    "Screen size " );      
-  child->x = -2; child->value_x = -3;
-  wii_add_child( display, child );     
+    child = wii_create_tree_node(NODETYPE_RESIZE_SCREEN, "Screen size");
+    wii_add_child(display, child);
 
-  child = wii_create_tree_node( NODETYPE_SPACER, "" );
-  wii_add_child( display, child );
+    child = wii_create_tree_node(NODETYPE_VSYNC, "Vertical sync");
+    wii_add_child(display, child);
 
-  child = wii_create_tree_node( NODETYPE_DIFF_SWITCH_DISPLAY, 
-    "Diff. switch display " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( display, child );
+    child =
+        wii_create_tree_node(NODETYPE_MAX_FRAME_RATE, "Maximum frame rate");
+    wii_add_child(display, child);
 
-  child = wii_create_tree_node( NODETYPE_SPACER, "" );
-  wii_add_child( display, child );
+    child = wii_create_tree_node(NODETYPE_FULL_WIDESCREEN, "Full widescreen");
+    wii_add_child(display, child);
 
-  child = wii_create_tree_node( NODETYPE_LIGHTGUN_CROSSHAIR, 
-    "Lightgun crosshair " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( display, child );
+    child = wii_create_tree_node(NODETYPE_16_9_CORRECTION, "16:9 correction");
+    wii_add_child(display, child);
 
-  child = wii_create_tree_node( NODETYPE_LIGHTGUN_FLASH, 
-    "Lightgun flash " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( display, child );
+    child = wii_create_tree_node(NODETYPE_TRAP_FILTER, "Color trap filter");
+    wii_add_child(display, child);
 
-  child = wii_create_tree_node( NODETYPE_SPACER, "" );
-  wii_add_child( display, child );
+    child =
+        wii_create_tree_node(NODETYPE_DOUBLE_STRIKE, "Double strike (240p)");
+    wii_add_child(display, child);
 
-  child = wii_create_tree_node( NODETYPE_MAX_FRAME_RATE, 
-    "Max frame rate " );        
-  child->x = -2; child->value_x = -3;
-  wii_add_child( display, child );
+    child = wii_create_tree_node(NODETYPE_GX_VI_SCALER, "Scaler");
+    wii_add_child(display, child);
 
-  child = wii_create_tree_node( NODETYPE_VSYNC, 
-    "Vertical sync " );      
-  child->x = -2; child->value_x = -3;
-  wii_add_child( display, child );   
+    child = wii_create_tree_node(NODETYPE_FILTER, "Bilinear filter");
+    wii_add_child(display, child);
 
-  //
-  // The controls settings menu
-  //
+    child = wii_create_tree_node(NODETYPE_SPACER, "");
+    wii_add_child(display, child);
 
-  TREENODE *controls = wii_create_tree_node( NODETYPE_CONTROLS_SETTINGS, 
-    "Control settings" );
-  wii_add_child( wii_menu_root, controls );
+    //
+    // The controls settings menu
+    //
 
-  child = wii_create_tree_node( NODETYPE_SWAP_BUTTONS, 
-    "Swap buttons " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( controls, child );
+    TREENODE* controls =
+        wii_create_tree_node(NODETYPE_CONTROLS_SETTINGS, "Control settings");
+    wii_add_child(advanced, controls);
 
-  child = wii_create_tree_node( NODETYPE_DIFF_SWITCH_ENABLED, 
-    "Diff. switches " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( controls, child );
+    child = wii_create_tree_node(NODETYPE_SWAP_BUTTONS, "Swap buttons");
+    wii_add_child(controls, child);
 
-  //
-  // The cartridge settings menu
-  //
+    child = wii_create_tree_node(NODETYPE_SPACER, "");
+    wii_add_child(controls, child);
 
-  TREENODE *cartridge = wii_create_tree_node( NODETYPE_CARTRIDGE_SETTINGS, 
-    "Cartridge settings" );
-  wii_add_child( wii_menu_root, cartridge );
+    child =
+        wii_create_tree_node(NODETYPE_DIFF_SWITCH_ENABLED, "Diff. switches");
+    wii_add_child(controls, child);
 
-  child = wii_create_tree_node( NODETYPE_HIGH_SCORE_MODE, 
-    "High score cart. " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( cartridge, child );
+    child = wii_create_tree_node(NODETYPE_DIFF_SWITCH_DISPLAY,
+                                 "Diff. switches display");
+    wii_add_child(controls, child);
 
-  child = wii_create_tree_node( NODETYPE_SPACER, "" );
-  wii_add_child( cartridge, child );
+    child = wii_create_tree_node(NODETYPE_SPACER, "");
+    wii_add_child(controls, child);
 
-  child = wii_create_tree_node( NODETYPE_CARTRIDGE_WSYNC, 
-    "Handle WSYNC " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( cartridge, child );
+    child = wii_create_tree_node(NODETYPE_LIGHTGUN_CROSSHAIR,
+                                 "Lightgun crosshair");
+    wii_add_child(controls, child);
 
-  child = wii_create_tree_node( NODETYPE_CARTRIDGE_CYCLE_STEALING, 
-    "Cycle stealing " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( cartridge, child );
+    child = wii_create_tree_node(NODETYPE_LIGHTGUN_FLASH, "Lightgun flash");
+    wii_add_child(controls, child);
 
-  child = wii_create_tree_node( NODETYPE_SPACER, "" );
-  wii_add_child( wii_menu_root, child );
+    //
+    // The cartridge settings menu
+    //
 
-  //
-  // The advanced menu
-  //
+    TREENODE* cartridge =
+        wii_create_tree_node(NODETYPE_CARTRIDGE_SETTINGS, "Cartridge settings");
+    wii_add_child(advanced, cartridge);
 
-  TREENODE *advanced = wii_create_tree_node( NODETYPE_ADVANCED, 
-    "Advanced" );
-  wii_add_child( wii_menu_root, advanced );    
+    child = wii_create_tree_node(NODETYPE_HIGH_SCORE_MODE, "High score cart.");
+    wii_add_child(cartridge, child);
 
-  child = wii_create_tree_node( NODETYPE_DEBUG_MODE, 
-    "Debug mode " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( advanced, child );
+    child = wii_create_tree_node(NODETYPE_SPACER, "");
+    wii_add_child(cartridge, child);
 
-  child = wii_create_tree_node( NODETYPE_TOP_MENU_EXIT, 
-    "Top menu exit " );
-  child->x = -2; child->value_x = -3;
-  wii_add_child( advanced, child );
+    child = wii_create_tree_node(NODETYPE_CARTRIDGE_WSYNC, "Handle WSYNC");
+    wii_add_child(cartridge, child);
 
-  wii_menu_push( wii_menu_root );	
+    child = wii_create_tree_node(NODETYPE_CARTRIDGE_CYCLE_STEALING,
+                                 "Cycle stealing");
+    wii_add_child(cartridge, child);
+
+    child = wii_create_tree_node(NODETYPE_SPACER, "");
+    wii_add_child(advanced, child);
+
+    child = wii_create_tree_node(NODETYPE_TOP_MENU_EXIT, "Top menu exit");
+    wii_add_child(advanced, child);
+
+    child =
+        wii_create_tree_node(NODETYPE_WIIMOTE_MENU_ORIENT, "Wiimote (menu)");
+    wii_add_child(advanced, child);
+
+    child = wii_create_tree_node(NODETYPE_SPACER, "");
+    wii_add_child(advanced, child);
+
+    child = wii_create_tree_node(NODETYPE_DEBUG_MODE, "Debug mode");
+    wii_add_child(advanced, child);
+
+    wii_menu_push(wii_menu_root);
 }
 
-/*
+/**
  * Updates the buffer with the header message for the current menu
  *
- * menu     The menu
- * buffer   The buffer to update with the header message for the
- *          current menu.
+ * @param   menu The menu
+ * @param   buffer The buffer to update with the header message for the current
+ *          menu.
  */
-void wii_menu_handle_get_header( TREENODE* menu, char *buffer )
-{
-  switch( menu->node_type )
-  {
-  case NODETYPE_LOAD_ROM:
-    if( !games_read )
-    {
-      snprintf( buffer, WII_MENU_BUFF_SIZE, "Reading game list..." );                
+void wii_menu_handle_get_header(TREENODE* menu, char* buffer) {
+    if (loading_game) {
+        snprintf(buffer, WII_MENU_BUFF_SIZE, gettextmsg("Loading game..."));
+    } else {
+        switch (menu->node_type) {
+            case NODETYPE_LOAD_ROM:
+                if (!games_read) {
+                    snprintf(buffer, WII_MENU_BUFF_SIZE,
+                             mount_pending
+                                 ? gettextmsg("Attempting to mount drive...")
+                                 : gettextmsg("Reading game list..."));
+                }
+                break;
+            default:
+                /* do nothing */
+                break;
+        }
     }
-    break;
-  case NODETYPE_LOAD_SNAPSHOT:
-    if( !save_states_read )
-    {
-      snprintf( buffer, WII_MENU_BUFF_SIZE, "Reading saved state list..." );                            
-    }
-    break;
-  default:
-    /* do nothing */
-    break;
-  }
 }
 
-
-/*
+/**
  * Updates the buffer with the footer message for the current menu
  *
- * menu     The menu
- * buffer   The buffer to update with the footer message for the
+ * @param   menu The menu
+ * @param   buffer The buffer to update with the footer message for the
  *          current menu.
  */
-void wii_menu_handle_get_footer( TREENODE* menu, char *buffer )
-{
-  switch( menu->node_type )
-  {
-  case NODETYPE_LOAD_ROM:
-    if( games_read )
-    {
-      wii_get_list_footer( menu, "cartridge", buffer );
+void wii_menu_handle_get_footer(TREENODE* menu, char* buffer) {
+    if (loading_game) {
+        snprintf(buffer, WII_MENU_BUFF_SIZE, " ");
+    } else {
+        switch (menu->node_type) {
+            case NODETYPE_LOAD_ROM:
+                if (games_read) {
+                    wii_get_list_footer(roms_menu, "item", "items", buffer);
+                }
+                break;
+            default:
+                break;
+        }
     }
-    break;
-  case NODETYPE_LOAD_SNAPSHOT:
-    wii_get_list_footer( menu, "state save", buffer );
-    break;
-  default:
-    break;
-  }
 }
 
-/*
+/**
  * Updates the buffer with the name of the specified node
  *
- * node     The node
- * name     The name of the specified node
- * value    The value of the specified node
+ * @param   node The node
+ * @param   buffer The name of the specified node
+ * @param   value The value of the specified node
  */
-void wii_menu_handle_get_node_name( 
-  TREENODE* node, char *buffer, char* value )
-{
-  const char *strmode = NULL;
-  snprintf( buffer, WII_MENU_BUFF_SIZE, "%s", node->name );
+void wii_menu_handle_get_node_name(TREENODE* node, char* buffer, char* value) {
+    const char* strmode = NULL;
+    snprintf(buffer, WII_MENU_BUFF_SIZE, "%s", node->name);
 
-  switch( node->node_type )
-  {
-  case NODETYPE_RESIZE_SCREEN:
-    snprintf( value, WII_MENU_BUFF_SIZE, "%s", 
-      ( ( wii_screen_x == DEFAULT_SCREEN_X && 
-        wii_screen_y == DEFAULT_SCREEN_Y ) ? "(Default)" : "Custom" ) );
-    break;
-  case NODETYPE_DIFF_SWITCH_DISPLAY:
-    switch( wii_diff_switch_display )
-    {
-    case DIFF_SWITCH_DISPLAY_DISABLED:
-      strmode="Disabled";
-      break;
-    case DIFF_SWITCH_DISPLAY_WHEN_CHANGED:
-      strmode="When changed (Default)";
-      break;
-    case DIFF_SWITCH_DISPLAY_ALWAYS:
-      strmode="Always";
-      break;
-    default:
-      break;
-    }
-    snprintf( value, WII_MENU_BUFF_SIZE, "%s", strmode );
-    break;
-  case NODETYPE_VSYNC:
-    switch( wii_vsync )
-    {
-    case VSYNC_DISABLED:
-      strmode="Disabled";
-      break;
-    case VSYNC_ENABLED:
-      strmode="Enabled";
-      break;
-    default:
-      break;
-    }
-    snprintf( value, WII_MENU_BUFF_SIZE, "%s", strmode );
-    break;
-  case NODETYPE_HIGH_SCORE_MODE:
-    switch( wii_hs_mode )
-    {
-    case HSMODE_ENABLED_NORMAL:
-      strmode="Enabled (excludes saved state)";
-      break;
-    case HSMODE_ENABLED_SNAPSHOTS:
-      strmode="Enabled (includes saved state)";
-      break;
-    case HSMODE_DISABLED:
-      strmode="Disabled";
-      break;
-    default:
-      break;
-    }
-    snprintf( value, WII_MENU_BUFF_SIZE, "%s", strmode );
-    break;
-  case NODETYPE_CARTRIDGE_WSYNC:
-    switch( wii_cart_wsync )
-    {
-    case CART_MODE_AUTO:
-      strmode="(auto)";
-      break;
-    case CART_MODE_ENABLED:
-      strmode="Enabled";
-      break;
-    case CART_MODE_DISABLED:
-      strmode="Disabled";
-      break;
-    default:
-      break;
-    }
-    snprintf( value, WII_MENU_BUFF_SIZE, "%s", strmode );
-    break;
-  case NODETYPE_CARTRIDGE_CYCLE_STEALING:
-    switch( wii_cart_cycle_stealing )
-    {
-    case CART_MODE_AUTO:
-      strmode="(auto)";
-      break;
-    case CART_MODE_ENABLED:
-      strmode="Enabled";
-      break;
-    case CART_MODE_DISABLED:
-      strmode="Disabled";
-      break;
-    }
-    snprintf( value, WII_MENU_BUFF_SIZE, "%s", strmode );
-    break;
-  case NODETYPE_MAX_FRAME_RATE:
-    if( wii_max_frame_rate == 0 )
-    {
-      snprintf( value, WII_MENU_BUFF_SIZE, "(Auto)" );
-    }
-    else
-    {
-      snprintf( value, WII_MENU_BUFF_SIZE, "%d", wii_max_frame_rate );
-    }
-    break;
-  case NODETYPE_DEBUG_MODE:
-  case NODETYPE_TOP_MENU_EXIT:
-  case NODETYPE_AUTO_LOAD_SNAPSHOT:
-  case NODETYPE_AUTO_SAVE_SNAPSHOT:
-  case NODETYPE_SWAP_BUTTONS:
-  case NODETYPE_DIFF_SWITCH_ENABLED:
-  case NODETYPE_LIGHTGUN_CROSSHAIR:
-  case NODETYPE_LIGHTGUN_FLASH:
-    {
-      BOOL enabled = FALSE;
-      switch( node->node_type )
-      {
-      case NODETYPE_DEBUG_MODE:
-        enabled = wii_debug;
-        break;
-      case NODETYPE_TOP_MENU_EXIT:
-        enabled = wii_top_menu_exit;
-        break;
-      case NODETYPE_AUTO_LOAD_SNAPSHOT:
-        enabled = wii_auto_load_snapshot;
-        break;
-      case NODETYPE_AUTO_SAVE_SNAPSHOT:
-        enabled = wii_auto_save_snapshot;
-        break;
-      case NODETYPE_SWAP_BUTTONS:
-        enabled = wii_swap_buttons;
-        break;
-      case NODETYPE_DIFF_SWITCH_ENABLED:
-        enabled = wii_diff_switch_enabled;
-        break;
-      case NODETYPE_LIGHTGUN_CROSSHAIR:
-        enabled = wii_lightgun_crosshair;
-        break;
-      case NODETYPE_LIGHTGUN_FLASH:
-        enabled = wii_lightgun_flash;
-        break;
-      default:
-        break;
-      }
+    switch (node->node_type) {
+        case NODETYPE_ROOT_DRIVE: {
+            int device;
+            FindDevice(node->name, &device);
+            switch (device) {
+                case DEVICE_SD:
+                    snprintf(buffer, WII_MENU_BUFF_SIZE, "[%s]", "SD Card");
+                    break;
+                case DEVICE_USB:
+                    snprintf(buffer, WII_MENU_BUFF_SIZE, "[%s]", "USB Device");
+                    break;
+                case DEVICE_SMB:
+                    snprintf(buffer, WII_MENU_BUFF_SIZE, "[%s]",
+                             "Network Share");
+                    break;
+            }
+        } break;
+        case NODETYPE_DIR:
+            snprintf(buffer, WII_MENU_BUFF_SIZE, "[%s]", node->name);
+            break;
+        case NODETYPE_CARTRIDGE_SAVE_STATES_SLOT: {
+            BOOL isLatest;
+            int current = wii_snapshot_current_index(&isLatest);
+            current++;
+            if (!isLatest) {
+                snprintf(value, WII_MENU_BUFF_SIZE, "%d", current);
+            } else {
+                snprintf(value, WII_MENU_BUFF_SIZE, "%d (%s)", current,
+                         gettextmsg("Latest"));
+            }
+        } break;
+        case NODETYPE_RESIZE_SCREEN:
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s",
+                     ((wii_screen_x == DEFAULT_SCREEN_X &&
+                       wii_screen_y == DEFAULT_SCREEN_Y)
+                          ? "(default)"
+                          : "Custom"));
+            break;
+        case NODETYPE_GX_VI_SCALER:
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s",
+                     (wii_gx_vi_scaler ? "GX + VI" : "GX"));
+            break;
+        case NODETYPE_16_9_CORRECTION:
+        case NODETYPE_FULL_WIDESCREEN: {
+            int val = node->node_type == NODETYPE_16_9_CORRECTION
+                          ? wii_16_9_correction
+                          : wii_full_widescreen;
+            snprintf(
+                value, WII_MENU_BUFF_SIZE, "%s",
+                (val == WS_AUTO ? "(auto)" : (val ? "Enabled" : "Disabled")));
+        } break;
+        case NODETYPE_DIFF_SWITCH_DISPLAY:
+            switch (wii_diff_switch_display) {
+                case DIFF_SWITCH_DISPLAY_DISABLED:
+                    strmode = "Disabled";
+                    break;
+                case DIFF_SWITCH_DISPLAY_WHEN_CHANGED:
+                    strmode = "When changed (default)";
+                    break;
+                case DIFF_SWITCH_DISPLAY_ALWAYS:
+                    strmode = "Always";
+                    break;
+                default:
+                    break;
+            }
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
+            break;
+        case NODETYPE_WIIMOTE_MENU_ORIENT:
+            if (wii_mote_menu_vertical) {
+                strmode = "Upright";
+            } else {
+                strmode = "Sideways";
+            }
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
+            break;
+        case NODETYPE_VSYNC:
+            switch (wii_vsync) {
+                case VSYNC_DISABLED:
+                    strmode = "Disabled";
+                    break;
+                case VSYNC_ENABLED:
+                    strmode = "Enabled";
+                    break;
+                default:
+                    break;
+            }
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
+            break;
+        case NODETYPE_HIGH_SCORE_MODE:
+            switch (wii_hs_mode) {
+                case HSMODE_ENABLED_NORMAL:
+                    strmode = "Enabled (excludes saved state)";
+                    break;
+                case HSMODE_ENABLED_SNAPSHOTS:
+                    strmode = "Enabled (includes saved state)";
+                    break;
+                case HSMODE_DISABLED:
+                    strmode = "Disabled";
+                    break;
+                default:
+                    break;
+            }
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
+            break;
+        case NODETYPE_CARTRIDGE_WSYNC:
+            switch (wii_cart_wsync) {
+                case CART_MODE_AUTO:
+                    strmode = "(auto)";
+                    break;
+                case CART_MODE_ENABLED:
+                    strmode = "Enabled";
+                    break;
+                case CART_MODE_DISABLED:
+                    strmode = "Disabled";
+                    break;
+                default:
+                    break;
+            }
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
+            break;
+        case NODETYPE_CARTRIDGE_CYCLE_STEALING:
+            switch (wii_cart_cycle_stealing) {
+                case CART_MODE_AUTO:
+                    strmode = "(auto)";
+                    break;
+                case CART_MODE_ENABLED:
+                    strmode = "Enabled";
+                    break;
+                case CART_MODE_DISABLED:
+                    strmode = "Disabled";
+                    break;
+            }
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
+            break;
+        case NODETYPE_MAX_FRAME_RATE:
+            if (wii_max_frame_rate == 0) {
+                snprintf(value, WII_MENU_BUFF_SIZE, "(auto)");
+            } else {
+                snprintf(value, WII_MENU_BUFF_SIZE, "%d", wii_max_frame_rate);
+            }
+            break;
+        case NODETYPE_DEBUG_MODE:
+        case NODETYPE_TOP_MENU_EXIT:
+        case NODETYPE_SWAP_BUTTONS:
+        case NODETYPE_DIFF_SWITCH_ENABLED:
+        case NODETYPE_LIGHTGUN_CROSSHAIR:
+        case NODETYPE_LIGHTGUN_FLASH: 
+        case NODETYPE_DOUBLE_STRIKE:
+        case NODETYPE_TRAP_FILTER:        
+        case NODETYPE_FILTER: {
+            BOOL enabled = FALSE;
+            switch (node->node_type) {
+                case NODETYPE_FILTER:
+                    enabled = wii_filter;
+                    break;
+                case NODETYPE_TRAP_FILTER:                    
+                    enabled = wii_trap_filter;
+                    break;                
+                case NODETYPE_DOUBLE_STRIKE:
+                    enabled = wii_double_strike_mode;
+                    break;
+                case NODETYPE_DEBUG_MODE:
+                    enabled = wii_debug;
+                    break;
+                case NODETYPE_TOP_MENU_EXIT:
+                    enabled = wii_top_menu_exit;
+                    break;
+                case NODETYPE_SWAP_BUTTONS:
+                    enabled = wii_swap_buttons;
+                    break;
+                case NODETYPE_DIFF_SWITCH_ENABLED:
+                    enabled = wii_diff_switch_enabled;
+                    break;
+                case NODETYPE_LIGHTGUN_CROSSHAIR:
+                    enabled = wii_lightgun_crosshair;
+                    break;
+                case NODETYPE_LIGHTGUN_FLASH:
+                    enabled = wii_lightgun_flash;
+                    break;
+                default:
+                    break;
+            }
 
-      snprintf( value, WII_MENU_BUFF_SIZE, "%s", 
-        enabled ? "Enabled" : "Disabled" );
-      break;
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s",
+                     enabled ? "Enabled" : "Disabled");
+            break;
+        }
+        default:
+            break;
     }
-  default:	    
-    break;
-  }
 }
 
-extern void wii_atari_put_image_gu_normal();
-
-/*
+/**
  * React to the "select" event for the specified node
  *
- * node     The node
+ * @param   node The node that was selected
  */
-void wii_menu_handle_select_node( TREENODE *node )
-{
-  switch( node->node_type )
-  {
-  case NODETYPE_RESIZE_SCREEN:
-    {
-      int blity = ( cartridge_region == REGION_NTSC ? 
-        NTSC_ATARI_BLIT_TOP_Y : PAL_ATARI_BLIT_TOP_Y );
-      int height = ( cartridge_region == REGION_NTSC ? 
-        NTSC_ATARI_HEIGHT : PAL_ATARI_HEIGHT );
-      wii_resize_screen_draw_border( blit_surface, blity, height );
-      wii_atari_put_image_gu_normal();
-      wii_sdl_flip(); 
-      resize_info rinfo = { 
-        DEFAULT_SCREEN_X, DEFAULT_SCREEN_Y, (float)wii_screen_x, (float)wii_screen_y };
-      wii_resize_screen_gui( &rinfo );
-      wii_screen_x = rinfo.currentX;
-      wii_screen_y = rinfo.currentY;
+void wii_menu_handle_select_node(TREENODE* node) {
+    if (node->node_type == NODETYPE_ROM || 
+        node->node_type == NODETYPE_RESUME ||
+        node->node_type == NODETYPE_LOAD_STATE ||
+        node->node_type == NODETYPE_RESET) {
+        char buff[WII_MAX_PATH];
+
+        wii_gx_push_callback( NULL, FALSE, NULL ); // Blank screen   
+        VIDEO_WaitVSync();
+
+        switch (node->node_type) {
+            case NODETYPE_ROM:                
+                snprintf(buff, sizeof(buff), "%s%s%s", wii_get_fs_prefix(),
+                         WII_ROMS_DIR, node->name);
+                last_rom_index = wii_menu_get_current_index();
+                loading_game = TRUE;
+                wii_start_emulation(buff);
+                loading_game = FALSE;
+                break;
+            case NODETYPE_RESUME:
+                wii_resume_emulation();
+                break;
+            case NODETYPE_RESET:
+                wii_reset_emulation();
+                break;
+            case NODETYPE_LOAD_STATE:
+                loading_game = TRUE;
+                if (!wii_start_snapshot()) {
+                    // Exit the save states (rom is no longer valid)
+                    wii_menu_pop();
+                }
+                loading_game = FALSE;
+                break;
+        }
+
+        wii_gx_pop_callback();
+        VIDEO_WaitVSync();
+
+    } else {
+        LOCK_RENDER_MUTEX();
+
+        switch (node->node_type) {
+            case NODETYPE_ROOT_DRIVE:
+            case NODETYPE_UPDIR:
+            case NODETYPE_DIR:
+                if (node->node_type == NODETYPE_ROOT_DRIVE) {
+                    char path[WII_MAX_PATH];
+                    snprintf(path, sizeof(path), "%s/", node->name);
+                    wii_set_roms_dir(path);
+                    mount_pending = TRUE;
+                } else if (node->node_type == NODETYPE_UPDIR) {
+                    const char* romsDir = wii_get_roms_dir();
+                    int len = strlen(romsDir);
+                    if (len > 1 && romsDir[len - 1] == '/') {
+                        char dirpart[WII_MAX_PATH] = "";
+                        char filepart[WII_MAX_PATH] = "";
+                        Util_splitpath(romsDir, dirpart, filepart);
+                        len = strlen(dirpart);
+                        if (len > 0) {
+                            dirpart[len] = '/';
+                            dirpart[len + 1] = '\0';
+                        }
+                        wii_set_roms_dir(dirpart);
+                    }
+                } else {
+                    char newDir[WII_MAX_PATH];
+                    snprintf(newDir, sizeof(newDir), "%s%s/",
+                             wii_get_roms_dir(), node->name);
+                    wii_set_roms_dir(newDir);
+                }
+                games_read = FALSE;
+                last_rom_index = 1;
+                break;
+            case NODETYPE_RESIZE_SCREEN: {
+                int blity =
+                    (cartridge_region == REGION_NTSC ? NTSC_ATARI_BLIT_TOP_Y
+                                                     : PAL_ATARI_BLIT_TOP_Y);
+                int height =
+                    (cartridge_region == REGION_NTSC ? NTSC_ATARI_HEIGHT
+                                                     : PAL_ATARI_HEIGHT);
+                wii_resize_screen_draw_border(blit_surface, blity, height);
+                wii_atari_put_image_gu_normal();
+                wii_sdl_flip();
+                resize_info rinfo = {DEFAULT_SCREEN_X, DEFAULT_SCREEN_Y,
+                                     (float)wii_screen_x, (float)wii_screen_y};
+                wii_resize_screen_gui(&rinfo);
+                wii_screen_x = rinfo.currentX;
+                wii_screen_y = rinfo.currentY;
+            } break;
+            case NODETYPE_FULL_WIDESCREEN:
+                wii_full_widescreen++;
+                if (wii_full_widescreen > WS_AUTO) {
+                    wii_full_widescreen = 0;
+                }
+                break;
+            case NODETYPE_16_9_CORRECTION:
+                wii_16_9_correction++;
+                if (wii_16_9_correction > WS_AUTO) {
+                    wii_16_9_correction = 0;
+                }
+                break;
+            case NODETYPE_DIFF_SWITCH_DISPLAY:
+                wii_diff_switch_display++;
+                if (wii_diff_switch_display > 2) {
+                    wii_diff_switch_display = 0;
+                }
+                break;
+            case NODETYPE_CARTRIDGE_CYCLE_STEALING:
+                wii_cart_cycle_stealing++;
+                if (wii_cart_cycle_stealing > 2) {
+                    wii_cart_cycle_stealing = 0;
+                }
+                break;
+            case NODETYPE_CARTRIDGE_WSYNC:
+                wii_cart_wsync++;
+                if (wii_cart_wsync > 2) {
+                    wii_cart_wsync = 0;
+                }
+                break;
+            case NODETYPE_HIGH_SCORE_MODE:
+                wii_hs_mode++;
+                if (wii_hs_mode > 2) {
+                    wii_hs_mode = 0;
+                }
+                break;
+            case NODETYPE_VSYNC:
+                wii_set_vsync(wii_vsync ^ 1);
+                break;
+            case NODETYPE_LIGHTGUN_CROSSHAIR:
+                wii_lightgun_crosshair ^= 1;
+                break;
+            case NODETYPE_LIGHTGUN_FLASH:
+                wii_lightgun_flash ^= 1;
+                break;
+            case NODETYPE_MAX_FRAME_RATE:
+                wii_max_frame_rate += 1;
+                if (wii_max_frame_rate > 70) {
+                    wii_max_frame_rate = 0;
+                } else if (wii_max_frame_rate == 1) {
+                    wii_max_frame_rate = 30;
+                }
+                break;
+            case NODETYPE_DOUBLE_STRIKE:
+                wii_double_strike_mode ^= 1;
+                break;
+            case NODETYPE_FILTER:
+                wii_filter ^= 1;
+                break;
+            case NODETYPE_GX_VI_SCALER:
+                wii_gx_vi_scaler ^= 1;
+                break;
+            case NODETYPE_TRAP_FILTER:
+                wii_trap_filter ^= 1;
+                break;
+            case NODETYPE_TOP_MENU_EXIT:
+                wii_top_menu_exit ^= 1;
+                break;
+            case NODETYPE_DEBUG_MODE:
+                wii_debug ^= 1;
+                break;
+            case NODETYPE_WIIMOTE_MENU_ORIENT:
+                wii_mote_menu_vertical ^= 1;
+                break;
+            case NODETYPE_SWAP_BUTTONS:
+                wii_swap_buttons ^= 1;
+                break;
+            case NODETYPE_DIFF_SWITCH_ENABLED:
+                wii_diff_switch_enabled ^= 1;
+                break;
+            case NODETYPE_ADVANCED:
+            case NODETYPE_LOAD_ROM:
+            case NODETYPE_CARTRIDGE_SETTINGS:
+            case NODETYPE_DISPLAY_SETTINGS:
+            case NODETYPE_CONTROLS_SETTINGS:
+                wii_menu_push(node);
+                if (node->node_type == NODETYPE_LOAD_ROM) {
+                    wii_menu_move(node, last_rom_index);
+                }
+                break;
+            case NODETYPE_SAVE_STATE:
+                wii_save_snapshot(NULL, TRUE);
+                break;
+            case NODETYPE_DELETE_STATE:
+                wii_delete_snapshot();
+                wii_snapshot_refresh();
+                break;
+            case NODETYPE_CARTRIDGE_SAVE_STATES_SLOT:
+                wii_snapshot_next();
+                break;
+            case NODETYPE_CARTRIDGE_SAVE_STATES:
+                wii_menu_push(node);
+                if (node->node_type == NODETYPE_LOAD_ROM) {
+                    if (games_read) {
+                        wii_menu_move(node, last_rom_index);
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+
+        UNLOCK_RENDER_MUTEX();
     }
-    break;
-  case NODETYPE_DIFF_SWITCH_DISPLAY:
-    wii_diff_switch_display++;
-    if( wii_diff_switch_display > 2 ) 
-    {
-      wii_diff_switch_display = 0;
-    }			
-    break;
-  case NODETYPE_CARTRIDGE_CYCLE_STEALING:
-    wii_cart_cycle_stealing++;
-    if( wii_cart_cycle_stealing > 2 ) 
-    {
-      wii_cart_cycle_stealing = 0;
-    }			
-    break;
-  case NODETYPE_CARTRIDGE_WSYNC:
-    wii_cart_wsync++;
-    if( wii_cart_wsync > 2 ) 
-    {
-      wii_cart_wsync = 0;
-    }			
-    break;
-  case NODETYPE_HIGH_SCORE_MODE:
-    wii_hs_mode++;
-    if( wii_hs_mode > 2 ) 
-    {
-      wii_hs_mode = 0;
-    }
-    break;
-  case NODETYPE_VSYNC:
-    wii_set_vsync( wii_vsync ^ 1 );
-    break;
-  case NODETYPE_LIGHTGUN_CROSSHAIR:
-    wii_lightgun_crosshair ^= 1;
-    break;
-  case NODETYPE_LIGHTGUN_FLASH:
-    wii_lightgun_flash ^= 1;
-    break;
-  case NODETYPE_ROM:
-    char buff[WII_MAX_PATH];
-    snprintf( buff, sizeof(buff), "%s%s", WII_ROMS_DIR, node->name );             
-    last_rom_index = wii_menu_get_current_index();
-    wii_start_emulation( buff );
-    break;
-  case NODETYPE_RESUME:
-    wii_resume_emulation();
-    break;
-  case NODETYPE_RESET:
-    wii_reset_emulation();
-    break;
-  case NODETYPE_SNAPSHOT:
-    snprintf( buff, sizeof(buff), "%s%s", WII_SAVES_DIR, node->name );  
-    wii_start_snapshot( buff );
-    break;
-  case NODETYPE_MAX_FRAME_RATE:
-    wii_max_frame_rate += 1;
-    if( wii_max_frame_rate > 70 )
-    {
-      wii_max_frame_rate = 0;
-    }
-    else if( wii_max_frame_rate == 1 )
-    {
-      wii_max_frame_rate = 30;
-    }
-    break;
-  case NODETYPE_TOP_MENU_EXIT:
-    wii_top_menu_exit ^= 1;
-    break;
-  case NODETYPE_DEBUG_MODE:
-    wii_debug ^= 1;
-    break;
-  case NODETYPE_SWAP_BUTTONS:
-    wii_swap_buttons ^= 1;
-    break;
-  case NODETYPE_DIFF_SWITCH_ENABLED:
-    wii_diff_switch_enabled ^= 1;
-    break;
-  case NODETYPE_AUTO_LOAD_SNAPSHOT:
-    wii_auto_load_snapshot ^= 1;
-    break;
-  case NODETYPE_AUTO_SAVE_SNAPSHOT:
-    wii_auto_save_snapshot ^= 1;
-    break;
-  case NODETYPE_SNAPSHOT_MANAGEMENT:
-  case NODETYPE_ADVANCED:
-  case NODETYPE_LOAD_ROM:     
-  case NODETYPE_CARTRIDGE_SETTINGS:
-  case NODETYPE_DISPLAY_SETTINGS:
-  case NODETYPE_CONTROLS_SETTINGS:
-    wii_menu_push( node );
-    if( node->node_type == NODETYPE_LOAD_ROM )
-    {
-      wii_menu_move( node, last_rom_index );
-    }
-    break;
-  case NODETYPE_LOAD_SNAPSHOT:
-    wii_menu_clear_children( node );
-    wii_menu_push( node );
-    save_states_read = FALSE;
-    break;
-  case NODETYPE_SAVE_SNAPSHOT:
-    wii_save_snapshot( NULL, TRUE );
-    break;
-  case NODETYPE_DELETE_SNAPSHOT:
-    wii_delete_snapshot();
-    break;
-  default:
-    break;
-  }
 }
 
-/*
+/**
  * Determines whether the node is currently visible
  *
- * node     The node
- * return   Whether the node is visible
+ * @param   node The node
+ * @return  Whether the node is visible
  */
-BOOL wii_menu_handle_is_node_visible( TREENODE *node )
-{
-  switch( node->node_type )
-  {
-  case NODETYPE_SAVE_SNAPSHOT:
-  case NODETYPE_RESET:
-  case NODETYPE_RESUME:
-    return wii_last_rom != NULL;
-    break;
-  case NODETYPE_DELETE_SNAPSHOT:
-    if( wii_last_rom != NULL )
-    {
-      char savename[WII_MAX_PATH];
-      wii_snapshot_handle_get_name( wii_last_rom, savename );
-      return Util_fileexists( savename );
+BOOL wii_menu_handle_is_node_visible(TREENODE* node) {
+    switch (node->node_type) {
+        case NODETYPE_DELETE_STATE:
+        case NODETYPE_LOAD_STATE:
+            return wii_snapshot_current_exists();
+        case NODETYPE_GX_VI_SCALER:
+            return !wii_double_strike_mode;
+        case NODETYPE_FILTER:
+            return !wii_gx_vi_scaler && !wii_double_strike_mode;
+        case NODETYPE_RESET:
+        case NODETYPE_RESUME:
+        case NODETYPE_CARTRIDGE_SAVE_STATES_SPACER:
+        case NODETYPE_CARTRIDGE_SAVE_STATES:
+            return wii_last_rom != NULL;
+            break;
+        default:
+            break;
     }
-    return FALSE;
-    break;
-  default:
-    break;
-  }
 
-  return TRUE;
+    return TRUE;
 }
 
-/*
+/**
  * Determines whether the node is selectable
  *
- * node     The node
- * return   Whether the node is selectable
+ * @param   node The node
+ * @return  Whether the node is selectable
  */
-BOOL wii_menu_handle_is_node_selectable( TREENODE *node )
-{
-  return TRUE;
+BOOL wii_menu_handle_is_node_selectable(TREENODE* node) {
+    if (node->node_type == NODETYPE_CARTRIDGE_SAVE_STATES_SPACER) {
+        return FALSE;
+    }
+    return TRUE;
 }
 
-/*
- * Provides an opportunity for the specified menu to do something during 
+/**
+ * Provides an opportunity for the specified menu to do something during
  * a display cycle.
  *
- * menu     The menu
+ * @param   menu The menu
  */
-void wii_menu_handle_update( TREENODE *menu )
-{
-  switch( menu->node_type )
-  {
-  case NODETYPE_LOAD_ROM:
-    if( !games_read )
-    {
-      wii_read_game_list( menu );  
-      wii_menu_reset_indexes();    
-      wii_menu_move( menu, 1 );
-      wii_menu_force_redraw = 1;
+void wii_menu_handle_update(TREENODE* menu) {
+    switch (menu->node_type) {
+        case NODETYPE_LOAD_ROM:
+            if (!games_read) {
+                LOCK_RENDER_MUTEX();
+
+                if (mount_pending) {
+                    const char* roms = wii_get_roms_dir();
+                    if (strlen(roms) > 0) {
+                        char mount[WII_MAX_PATH];
+                        Util_strlcpy(mount, roms, sizeof(mount));
+
+                        resetSmbErrorMessage();  // Reset the SMB error message
+                        if (!ChangeInterface(mount, FS_RETRY_COUNT)) {
+                            wii_set_roms_dir("");
+                            const char* netMsg = getSmbErrorMessage();
+                            if (netMsg != NULL) {
+                                wii_set_status_message(netMsg);
+                            } else {
+                                char msg[256];
+                                snprintf(msg, sizeof(msg), "%s: %s",
+                                         "Unable to mount", mount);
+                                wii_set_status_message(msg);
+                            }
+                        }
+                    }
+                    mount_pending = FALSE;
+                }
+                wii_read_game_list(roms_menu);
+                wii_menu_reset_indexes();
+                wii_menu_move(roms_menu, 1);
+
+                UNLOCK_RENDER_MUTEX();
+            }
+            break;
+        default:
+            /* do nothing */
+            break;
     }
-    break;
-  case NODETYPE_LOAD_SNAPSHOT:
-    if( !save_states_read )
-    {
-      wii_read_save_state_list( menu );    
-      wii_menu_reset_indexes();    
-      wii_menu_move( menu, 1 );
-      wii_menu_force_redraw = 1;            
-    }
-    break;
-  default:
-    /* do nothing */
-    break;
-  }
 }
 
-/*
+/**
+ * Used for comparing menu names when sorting (qsort)
+ *
+ * @param   a The first tree node to compare
+ * @param   b The second tree node to compare
+ * @return  The result of the comparison
+ */
+static int game_name_compare(const void* a, const void* b) {
+    TREENODE** aptr = (TREENODE**)a;
+    TREENODE** bptr = (TREENODE**)b;
+    int type = (*aptr)->node_type - (*bptr)->node_type;
+    return type != 0 ? type : strcasecmp((*aptr)->name, (*bptr)->name);
+}
+
+/**
  * Reads the list of games into the specified menu
  *
- * menu     The menu to read the games into
+ * @param   menu The menu to read the games into
  */
-static void wii_read_game_list( TREENODE *menu )
-{
-  DIR *romdir = opendir( WII_ROMS_DIR );
-  if( romdir != NULL)
-  {
-    struct dirent *dent;
-    struct stat statbuf;
-    while ((dent = readdir(romdir)) != NULL)
-    {
-      char* filepath = dent->d_name;
-      char path[WII_MAX_PATH];
-      sprintf(path,"%s/%s", WII_ROMS_DIR, filepath);
-      stat(path, &statbuf);
-      if( strcmp( ".", filepath ) != 0 && 
-        strcmp( "..", filepath ) != 0 )
-      {
-        if( !S_ISDIR( statbuf.st_mode ) )
-        {
-          TREENODE *child = 
-            wii_create_tree_node( NODETYPE_ROM, filepath );
+static void wii_read_game_list(TREENODE* menu) {
+    const char* roms = wii_get_roms_dir();
 
-          wii_add_child( menu, child );
+    wii_menu_clear_children(menu);  // Clear the children
+
+#ifdef WII_NETTRACE
+    net_print_string(NULL, 0, "ReadGameList: %s\n", roms, strlen(roms));
+#endif
+
+    BOOL success = FALSE;
+    if (strlen(roms) > 0) {
+        DIR* romdir = opendir(roms);
+
+#ifdef WII_NETTRACE
+        net_print_string(NULL, 0, "OpenDir: %d\n", roms, romdir);
+#endif
+
+        if (romdir != NULL) {
+            wii_add_child(menu, wii_create_tree_node(NODETYPE_UPDIR, "[..]"));
+
+            struct dirent* entry = NULL;
+            while ((entry = readdir(romdir)) != NULL) {
+                if ((strcmp(".", entry->d_name) &&
+                     strcmp("..", entry->d_name))) {
+                    TREENODE* child = wii_create_tree_node(
+                        (entry->d_type == DT_DIR ? NODETYPE_DIR : NODETYPE_ROM),
+                        entry->d_name);
+
+                    wii_add_child(menu, child);
+                }
+            }
+            closedir(romdir);
+
+            // Sort the games list
+            qsort(menu->children, menu->child_count, sizeof(*(menu->children)),
+                  game_name_compare);
+
+            success = TRUE;
+        } else {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "%s: %s", "Error opening", roms);
+            wii_set_status_message(msg);
         }
-      }
     }
 
-    closedir( romdir );
-  }
-  else
-  {
-    wii_set_status_message( "Error opening roms directory." );
-  }
-
-  // Sort the games list
-  qsort( menu->children, menu->child_count, 
-    sizeof(*(menu->children)), wii_menu_name_compare );
-
-  games_read = 1;
-}
-
-/*
- * Reads the list of snapshots into the specified menu
- *
- * menu     The menu to read the snapshots into
- */
-static void wii_read_save_state_list( TREENODE *menu )
-{
-  DIR *ssdir = opendir( WII_SAVES_DIR );
-  if( ssdir != NULL)
-  { 
-    struct dirent *dent;
-    struct stat statbuf;
-    char ext[WII_MAX_PATH];
-    while ((dent = readdir(ssdir)) != NULL)
-    {
-      char* filepath = dent->d_name;
-      char path[WII_MAX_PATH];
-      sprintf(path,"%s/%s", WII_SAVES_DIR, filepath);
-      stat(path, &statbuf);            
-      if( strcmp( ".", filepath ) != 0 && 
-        strcmp( "..", filepath ) != 0 )
-      {                
-        Util_getextension( filepath, ext );
-        if( strcmp( ext, WII_SAVE_GAME_EXT ) == 0 )
-        {                    
-          if( !S_ISDIR( statbuf.st_mode ) )
-          {
-            // TODO: Check to see if a rom exists for the snapshot
-            // TODO: Provide option to display cart info from 
-            //       header
-            TREENODE *child = 
-              wii_create_tree_node( NODETYPE_SNAPSHOT, filepath );
-
-            wii_add_child( menu, child );
-          }
-        }
-      }
+    if (!success) {
+        wii_set_roms_dir("");
+        wii_add_child(menu, wii_create_tree_node(NODETYPE_ROOT_DRIVE, "sd:"));
+        wii_add_child(menu, wii_create_tree_node(NODETYPE_ROOT_DRIVE, "usb:"));
+        wii_add_child(menu, wii_create_tree_node(NODETYPE_ROOT_DRIVE, "smb:"));
     }
 
-    closedir( ssdir );
-  }
-  else
-  {
-    wii_set_status_message( "Error opening state saves directory." );
-  }
-
-  // Sort the games list
-  qsort( menu->children, menu->child_count, 
-    sizeof(*(menu->children)), wii_menu_name_compare );
-
-  save_states_read = TRUE;
+    games_read = TRUE;
 }
 
-/*
+/**
  * Invoked after exiting the menu loop
  */
-void wii_menu_handle_post_loop()
-{
-}
+void wii_menu_handle_post_loop() {}
 
-/*
+/**
  * Invoked prior to entering the menu loop
  */
-void wii_menu_handle_pre_loop()
-{
-}
+void wii_menu_handle_pre_loop() {}
 
-/*
- * Invoked when the home button is pressed when the 
- * menu is being displayed
+/**
+ * Invoked when the home button is pressed when the menu is being displayed
  */
-void wii_menu_handle_home_button()
-{
-}
+void wii_menu_handle_home_button() {}

@@ -26,6 +26,8 @@
 #include "Region.h"
 #include "wii_app_common.h"
 #include "wii_atari.h"
+#include "wii_app.h"
+
 #include <string.h>
 #define CARTRIDGE_SOURCE "Cartridge.cpp"
 
@@ -313,8 +315,11 @@ bool cartridge_SaveHighScoreSram()
         return false;
     }
 
-    std::string filename( WII_HIGH_SCORE_CART_SRAM );
-    FILE* file = fopen( filename.c_str(), "wb" );
+    char sram_file[WII_MAX_PATH] = "";
+    snprintf(sram_file, WII_MAX_PATH, "%s%s", wii_get_fs_prefix(),
+             WII_HIGH_SCORE_CART_SRAM);
+    std::string filename(sram_file);
+    FILE* file = fopen(filename.c_str(), "wb");
     if( file == NULL ) 
     {
         logger_LogError("Failed to open the file " + filename + " for writing.");
@@ -341,7 +346,10 @@ bool cartridge_SaveHighScoreSram()
  */
 static bool cartridge_LoadHighScoreSram() 
 {    
-    std::string filename( WII_HIGH_SCORE_CART_SRAM );
+    char sram_file[WII_MAX_PATH] = "";
+    snprintf(sram_file, WII_MAX_PATH, "%s%s", wii_get_fs_prefix(),
+             WII_HIGH_SCORE_CART_SRAM);
+    std::string filename( sram_file );
     FILE* file = fopen( filename.c_str(), "rb" );
     if( file == NULL ) 
     {
@@ -380,7 +388,11 @@ bool cartridge_LoadHighScoreCart() {
     }
 
     byte* high_score_buffer = NULL;
-    uint hsSize = cartridge_Read( WII_HIGH_SCORE_CART, &high_score_buffer );
+    char high_score_cart[WII_MAX_PATH] = "";
+    snprintf(high_score_cart, WII_MAX_PATH, "%s%s", wii_get_fs_prefix(),
+             WII_HIGH_SCORE_CART);
+
+    uint hsSize = cartridge_Read( high_score_cart, &high_score_buffer );
     if( high_score_buffer != NULL )
     {
         logger_LogInfo("Found high score cartridge.");
