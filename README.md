@@ -29,7 +29,7 @@ please visit the [Wii7800 page](http://www.wiibrew.org/wiki/Wii7800) on WiiBrew:
 ## Installation
 
 To install Wii7800, simply extract the zip file directly to your SD card 
-or USB device (retain the hierarchical structure exactly).
+(retain the hierarchical structure exactly).
 
 Cartridge images must be placed in the roms directory (/wii7800/roms).
 (Zip files are supported)
@@ -41,9 +41,14 @@ while the PAL file must be named, "7800pal.rom".
 
 ## Lightgun Accuracy, etc.
 
-The crosshair for the Wii7800 emulator is not perfect. For example, you 
-may be pointing at something and your shot may register slightly to the 
-right or left. 
+The crosshair for the Wii7800 emulator is not perfect. For example you may be
+pointing at something and your shot may register to the right or left. This is
+due to the way the 7800 handles hit detection for lightgun games. It only 
+checks for a hit every 7 CPU cycles. There are 330 cycles for the visible 
+portion of each frame. Thus, there are only ~47 hit points for each scanline.
+So, the crosshair at best gets you in approximately the right area, and if you
+miss you need to adjust based on where the shot shows up on the screen 
+(exactly how you do it when there is no crosshair). 
 
 ## Cartridge/ROM Compatibility 
 
@@ -147,17 +152,6 @@ This page contains a list of compatible ROMs by "hash code".
             1              : Left difficulty (if enabled)
             2              : Right difficulty (if enabled)
             Home           : Display Wii7800 menu (see above)
-
-## SMB (Network support)	
-
-Wii7800 allows for loading ROMs over the network via SMB. To enable SMB	
-support, you must edit the "wii7800.conf" file located in the "/wii7800"	
-directory and provide values for the following:	
-
-  * share_ip    : IP address of the computer to connect to.	
-  * share_name  : Name of the share on the computer.	
-  * share_user  : Name of the user to connect as	
-  * share_pass  : Password for the user         
            
 ## Wii7800 crashes, code dumps, etc.
 
@@ -179,23 +173,6 @@ the following locations:
 * Team Twiizers    : For enabling homebrew
 
 ## Change log
-
-### TBD (0.5)
-    - Cartridge database 
-        - Fixed incorrect controller settings for Sirius
-        - Added several homebrew titles (Arkanoid, etc.)
-    - Display enhancements
-        - Double strike (240p)
-        - GX+VI mode
-        - 16:9 correction
-        - Full widescreen support      
-        - Ability to enable/disable bilinear filter (GX mode)
-        - Color trap filter
-    - Hierarchical file navigation support
-    - USB Support
-    - SMB (Network support) for loading ROMs  
-    - Multi-save slot support
-    - Support for launching via WiiFlow (and returning)
 
 ### 11/16/19 (0.4)
     - Reworked audio integration (resolves audio clipping and popping)
