@@ -55,6 +55,11 @@
 
 #include "gettext.h"
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 /** SDL Video external references */
 extern "C" {
 void WII_VideoStart();
@@ -541,8 +546,8 @@ void wii_menu_handle_select_node(TREENODE* node) {
 
         switch (node->node_type) {
             case NODETYPE_ROM:                
-                snprintf(buff, sizeof(buff), "%s%s%s", wii_get_fs_prefix(),
-                         WII_ROMS_DIR, node->name);
+                snprintf(buff, sizeof(buff), "%s%s",
+                         wii_get_roms_dir(), node->name);
                 last_rom_index = wii_menu_get_current_index();
                 loading_game = TRUE;
                 wii_start_emulation(buff);
