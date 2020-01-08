@@ -50,13 +50,18 @@ static byte maria_wmode;
 // StoreCell
 // ----------------------------------------------------------------------------
 static inline void maria_StoreCell(byte data) {
+  byte rmode = memory_ram[CTRL] & 3;  
   if(maria_horizontal < MARIA_LINERAM_SIZE) {
     if(data) {
       maria_lineRAM[maria_horizontal] = maria_palette | data;
     }
     else { 
       byte kmode = memory_ram[CTRL] & 4;
+#ifdef K320_HACK
+      if(kmode && rmode != 2) {
+#else
       if(kmode) {
+#endif
         maria_lineRAM[maria_horizontal] = 0;
       }
     }
@@ -68,13 +73,18 @@ static inline void maria_StoreCell(byte data) {
 // StoreCell
 // ----------------------------------------------------------------------------
 static inline void maria_StoreCell(byte high, byte low) {
+  byte rmode = memory_ram[CTRL] & 3;
   if(maria_horizontal < MARIA_LINERAM_SIZE) {
     if(low || high) {
       maria_lineRAM[maria_horizontal] = maria_palette & 16 | high | low;
     }
     else { 
       byte kmode = memory_ram[CTRL] & 4;
+#ifdef K320_HACK
+      if(kmode && rmode != 2) {
+#else
       if(kmode) {
+#endif
         maria_lineRAM[maria_horizontal] = 0;
       }
     }

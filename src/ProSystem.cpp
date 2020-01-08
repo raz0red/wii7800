@@ -32,6 +32,11 @@
 #include "wii_sdl.h"
 #include "wii_atari.h"
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #define PRO_SYSTEM_SOURCE "ProSystem.cpp"
 #define PRO_SYSTEM_STATE_HEADER "PRO-SYSTEM STATE"
 
@@ -63,6 +68,8 @@ void prosystem_Reset( ) {
     tia_Reset( );
     pokey_Clear( );
     pokey_Reset( );
+    xm_Reset( );
+
     memory_Reset( );
     maria_Clear( );
     maria_Reset( );
@@ -109,6 +116,10 @@ bool dbg_cycle_stealing;
 // ExecuteFrame
 // ----------------------------------------------------------------------------
 
+#if 0
+extern float wii_orient_roll;
+#endif
+
 void prosystem_ExecuteFrame(const byte* input) 
 {
     // Is WSYNC enabled for the current frame?
@@ -137,10 +148,18 @@ void prosystem_ExecuteFrame(const byte* input)
     dbg_maria_cycles = 0; // debug
     dbg_p6502_cycles = 0; // debug    
 
-    if( cartridge_pokey ) pokey_Frame();
+    if( cartridge_pokey || cartridge_xm ) pokey_Frame();
 
     for( maria_scanline = 1; maria_scanline <= prosystem_scanlines; maria_scanline++ ) 
     {
+#if 0      
+        if ((int)wii_orient_roll == maria_scanline) {
+          memory_ram[INPT2] &= 0x7f; 
+        } else {
+          memory_ram[INPT2] |= 0x80;
+        }
+#endif    
+
         if( maria_scanline == maria_displayArea.top ) 
         {
             memory_ram[MSTAT] = 0;
@@ -253,12 +272,12 @@ void prosystem_ExecuteFrame(const byte* input)
         if( lightgun ) prosystem_FireLightGun();
 
         tia_Process(2);
-        if( cartridge_pokey ) 
+        if( cartridge_pokey || cartridge_xm ) 
         {
             pokey_Process(2);
         }
 
-        if( cartridge_pokey ) pokey_Scanline();
+        if( cartridge_pokey || cartridge_xm ) pokey_Scanline();
     }  
 
     prosystem_frame++;

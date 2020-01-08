@@ -45,7 +45,9 @@ CFLAGS = \
     -g -O1 -Wall $(MACHDEP) $(INCLUDE) \
     -DNOCRYPT -DWII -DBIG_ENDIAN -DWII_BIN2O \
     -Wno-format-truncation \
-    -Wno-narrowing
+    -Wno-narrowing \
+    -DK320_HACK
+#   -DWII_NETTRACE
           
 #-DLOWTRACE -DDEBUG
 CXXFLAGS = $(CFLAGS)
@@ -91,6 +93,7 @@ CPPFILES := \
     Cartridge.cpp \
     Common.cpp \
     Database.cpp \
+    ExpansionModule.cpp \
     Hash.cpp \
     Logger.cpp \
     Maria.cpp \

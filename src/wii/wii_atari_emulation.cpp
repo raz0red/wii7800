@@ -51,6 +51,10 @@ void WII_VideoStart();
 void WII_VideoStop();
 }
 
+#if 0
+extern u32 sound_max;
+#endif
+
 /**
  * Starts the emulator for the specified rom file.
  *
@@ -164,6 +168,10 @@ BOOL wii_start_emulation(char* romfile,
 
         // Wait until no buttons are pressed
         wii_wait_until_no_buttons(2);
+
+#if 0
+        sound_max = 0;
+#endif        
 
         wii_atari_main_loop();
 

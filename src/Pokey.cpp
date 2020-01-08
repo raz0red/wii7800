@@ -38,6 +38,12 @@
 // ----------------------------------------------------------------------------
 // Pokey.cpp
 // ----------------------------------------------------------------------------
+
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #include <stdlib.h>
 #include <SDL.h>
 #include "Pokey.h"
@@ -70,7 +76,7 @@
 #define SK_RESET	0x03
 
 byte pokey_buffer[POKEY_BUFFER_SIZE] = {0};
-uint pokey_size = 524;
+uint pokey_size = POKEY_BUFFER_SIZE; // 524
 
 static uint pokey_frequency = 1787520;
 static uint pokey_sampleRate = 31440;
@@ -101,6 +107,9 @@ static uint r17;
 static byte SKCTL;
 byte RANDOM;
 
+byte POT_input[8] = {228, 228, 228, 228, 228, 228, 228, 228};
+static int pot_scanline;
+
 static ullong random_scanline_counter;
 static ullong prev_random_scanline_counter;
 
@@ -129,6 +138,9 @@ void pokey_setSampleRate( uint rate ) {
 // Reset
 // ----------------------------------------------------------------------------
 void pokey_Reset( ) {
+	pot_scanline = 0;
+  pokey_soundCntr = 0;
+
   for(int index = 0; index < POKEY_POLY17_SIZE; index++) {
     pokey_poly17[index] = rand( ) & 1;
   }
@@ -151,6 +163,10 @@ void pokey_Reset( ) {
     pokey_divideMax[channel] = 0x7fffffffL;
     pokey_audc[channel] = 0;
     pokey_audf[channel] = 0;
+  }
+
+  for(int i = 0; i < 8; i++) {
+    POT_input[i] = 228;
   }
 
   pokey_audctl = 0;
@@ -176,12 +192,33 @@ void pokey_Frame() {
 /* Called prior to each scanline */
 void pokey_Scanline() {
   random_scanline_counter += CYCLES_PER_SCANLINE; 
+
+	if (pot_scanline < 228)
+		pot_scanline++;  
 }
 
 byte pokey_GetRegister(word address) {
+#if 0  
+net_print_string(NULL, 0, "pokey_getRegister: %d\n", address);  
+#endif
   byte data = 0;
 
+  byte addr = address & 0x0f;
+  if (addr < 8) {
+    byte b = POT_input[addr];
+    if (b <= pot_scanline)
+      return b;
+    return pot_scanline;
+  }  
+
   switch (address) {
+    case POKEY_ALLPOT: {
+      byte b;
+			for (int i = 0; i < 8; i++)
+				if (POT_input[addr] <= pot_scanline)
+					b &= ~(1 << i);		/* reset bit if pot value known */
+      return b;
+		}    
     case POKEY_RANDOM:
       ullong curr_scanline_counter = 
         ( random_scanline_counter + prosystem_cycles + prosystem_extra_cycles );
@@ -210,7 +247,6 @@ byte pokey_GetRegister(word address) {
 
       RANDOM = RANDOM ^ 0xff;
       data = RANDOM;
-
       break;
   }
 
@@ -221,11 +257,22 @@ byte pokey_GetRegister(word address) {
 // SetRegister
 // ----------------------------------------------------------------------------
 void pokey_SetRegister(word address, byte value) {
+#if 0  
+net_print_string(NULL, 0, "pokey_setRegister: %d %d\n", address, value);
+#endif
+
 	byte channelMask;
   switch(address) {
+    case POKEY_POTGO:
+      if (!(SKCTL & 4))
+        pot_scanline = 0;	/* slow pot mode */
+      break;
 
     case POKEY_SKCTLS:
       SKCTL = value;
+      if (value & 4)
+        pot_scanline = 228;	/* fast pot mode - return results immediately */
+      break;
       return;
 
     case POKEY_AUDF1:
@@ -469,7 +516,6 @@ void pokey_Process(uint length)
 // Clear
 // ----------------------------------------------------------------------------
 void pokey_Clear( ) {
-  for(int index = 0; index < POKEY_BUFFER_SIZE; index++) {
-    pokey_buffer[index] = 0;
-  }
+  pokey_soundCntr = 0;
+  memset(pokey_buffer, 0, POKEY_BUFFER_SIZE);
 }

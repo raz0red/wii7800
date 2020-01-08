@@ -112,24 +112,26 @@ bool sound_SetFormat(WAVEFORMATEX format) {
 // Store
 // ----------------------------------------------------------------------------
 
+byte sample[MAX_BUFFER_SIZE] = {0};
+byte pokeySample[MAX_BUFFER_SIZE] = {0};
+
 bool sound_Store( ) {
 
   if( sound_muted ) sound_SetMuted( false );
-
-  byte sample[MAX_BUFFER_SIZE];
   memset( sample, 0, MAX_BUFFER_SIZE );  
   uint length = 48000 / prosystem_frequency; /* sound_GetSampleLength(sound_format.nSamplesPerSec, prosystem_frame, prosystem_frequency); */ /* 48000 / prosystem_frequency */
   sound_Resample(tia_buffer, sample, length);
+  tia_Clear(); // WII
   
-  if(cartridge_pokey) {
-    byte pokeySample[MAX_BUFFER_SIZE];
+  if(cartridge_pokey || xm_pokey_enabled) {    
     memset( pokeySample, 0, MAX_BUFFER_SIZE );
-    sound_Resample(pokey_buffer, pokeySample, length);
+    sound_Resample(pokey_buffer, pokeySample, length);    
     for(uint index = 0; index < length; index++) {
       sample[index] += pokeySample[index];
       sample[index] = sample[index] / 2;
     }
   }  
+  pokey_Clear(); // WII
 
   wii_storeSound( sample, length );  
      
@@ -139,8 +141,7 @@ bool sound_Store( ) {
 // ----------------------------------------------------------------------------
 // Play
 // ----------------------------------------------------------------------------
-bool sound_Play( ) {
-  byte sample[MAX_BUFFER_SIZE];
+bool sound_Play( ) {  
   memset( sample, 0, MAX_BUFFER_SIZE );
   wii_storeSound( sample, 1024 );
   //ResetAudio();
@@ -151,7 +152,6 @@ bool sound_Play( ) {
 // Stop
 // ----------------------------------------------------------------------------
 bool sound_Stop( ) {
-  byte sample[MAX_BUFFER_SIZE];
   memset( sample, 0, MAX_BUFFER_SIZE );
   wii_storeSound( sample, 1024 );
   //StopAudio();

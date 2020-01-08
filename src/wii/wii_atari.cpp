@@ -58,6 +58,11 @@
 #include "wii_atari_input.h"
 #include "wii_atari_sdl.h"
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 // The size of the crosshair
 #define CROSSHAIR_SIZE 11
 // The offset from the center of the crosshair
@@ -140,6 +145,10 @@ static char saves_dir[WII_MAX_PATH] = "";
 int wii_ir_x = -100;
 /** The y location of the Wiimote (IR) */
 int wii_ir_y = -100;
+
+#if 0
+float wii_orient_roll = 0;
+#endif
 
 // Forward reference
 static void wii_atari_display_crosshairs(int x, int y, BOOL erase);
@@ -389,6 +398,9 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
     wii_atari_init_palette8();
     prosystem_Reset();
 
+#if 0
+    cartridge_xm = true;
+#endif    
     wii_atari_pause(false);
 
     return true;
@@ -560,6 +572,36 @@ static void wii_atari_update_wiimote_ir() {
         wii_ir_y = -100;
     }
 }
+
+#if 0
+static void wii_atari_update_wiimote_roll() {
+    orient_t orient;
+    WPAD_Orientation( WPAD_CHAN_0, &orient );
+
+    wii_orient_roll = orient.roll;
+
+    //-60 + 60;
+
+    int val = wii_orient_roll;
+    if (val < -60)
+        val = -60;
+    if (val > 60)
+        val = 60;
+
+    val = -val;
+
+    // 0 to 120;
+    val += 60; 
+
+    float ratio = 140/120.0;//(circus)
+    //float ratio = 60/120.0; //(ark)
+    val *= ratio;
+    val += 40;  //(circus)
+    //val += 20;//  (ark)
+
+    wii_orient_roll = val;    
+}
+#endif
 
 // The number of cycles per scanline that the 7800 checks for a hit
 #define LG_CYCLES_PER_SCANLINE 318
@@ -748,6 +790,9 @@ static void wii_atari_update_keys(unsigned char keyboard_data[19]) {
     if (lightgun_enabled) {
         wii_atari_update_wiimote_ir();
     }
+#if 0
+    wii_atari_update_wiimote_roll();
+#endif    
     wii_atari_update_joystick(0, keyboard_data);
     wii_atari_update_joystick(1, keyboard_data);
 }
@@ -800,6 +845,10 @@ void wii_render_callback() {
                     dbg_wsync_count, (dbg_cycle_stealing ? "1" : "0"),
                     dbg_maria_cycles, dbg_p6502_cycles, dbg_saved_cycles,
                     RANDOM, cartridge_hblank);
+#if 0
+    ", roll: %f"
+    , wii_orient_roll
+#endif
         }
 
         GXColor color = (GXColor){0x0, 0x0, 0x0, 0x80};

@@ -189,8 +189,10 @@ void region_Reset( ) {
       palette_Load(REGION_PALETTE_PAL);  // Added check for default - bberlin
     prosystem_frequency = REGION_FREQUENCY_PAL;
     prosystem_scanlines = REGION_SCANLINES_PAL;
+#ifndef WII    
     tia_size = 624;
-    pokey_size = 624;    
+    pokey_size = 624;   
+#endif    
   }  
   else {
     maria_displayArea = REGION_DISPLAY_AREA_NTSC;
@@ -199,8 +201,10 @@ void region_Reset( ) {
       palette_Load(REGION_PALETTE_NTSC);  // Added check for default - bberlin
     prosystem_frequency = REGION_FREQUENCY_NTSC;
     prosystem_scanlines = REGION_SCANLINES_NTSC;
+#ifndef WII    
     tia_size = 524;
     pokey_size = 524;
+#endif    
   }
   pokey_setSampleRate( ( prosystem_scanlines * prosystem_frequency ) << 1 );
 }

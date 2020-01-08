@@ -28,6 +28,11 @@
 #include "wii_atari.h"
 #include "wii_app.h"
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #include <string.h>
 #define CARTRIDGE_SOURCE "Cartridge.cpp"
 
@@ -46,6 +51,7 @@ uint cartridge_flags;
 int cartridge_crosshair_x;
 int cartridge_crosshair_y;
 bool cartridge_dualanalog = false;
+bool cartridge_xm = false;
 uint cartridge_hblank = 34;
 
 // Whether the cartridge has accessed the high score ROM (indicates that the
@@ -164,6 +170,14 @@ static void cartridge_ReadHeader(const byte* header) {
   cartridge_controller[1] = header[56];
   cartridge_region = header[57];
   cartridge_flags = 0;
+  cartridge_xm = (header[63] & 1)? true: false;
+
+#if 0
+net_print_string(NULL, 0, "cartridge_type (from header): %d\n", cartridge_type);
+net_print_string(NULL, 0, "cartridge_type 53: %d\n", header[53]);
+net_print_string(NULL, 0, "cartridge_type 54: %d\n", header[54]);
+net_print_string(NULL, 0, "cartridge_xm (from header): %d\n", cartridge_xm);
+#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -197,6 +211,11 @@ static bool cartridge_Load(const byte* data, uint size) {
   else {
     cartridge_size = size;
   }
+
+#if 0
+  net_print_string(NULL, 0, "cartridge_type: %d\n", cartridge_type);        
+  net_print_string(NULL, 0, "cartridge_size: %d\n", cartridge_size);        
+#endif  
   
   cartridge_buffer = new byte[cartridge_size];
   for(int index = 0; index < cartridge_size; index++) {
@@ -438,6 +457,7 @@ void cartridge_Store( ) {
       break;
     case CARTRIDGE_TYPE_SUPERCART_LARGE:
       if(cartridge_GetBankOffset(8) < cartridge_size) {
+        // cartridge_size - 16384
         memory_WriteROM(49152, 16384, cartridge_buffer + cartridge_GetBankOffset(8));
         memory_WriteROM(16384, 16384, cartridge_buffer + cartridge_GetBankOffset(0));
       }
@@ -588,6 +608,7 @@ void cartridge_Release( ) {
     cartridge_type = 0;
     cartridge_region = 0;
     cartridge_pokey = 0;
+    cartridge_xm = false;
     memset( cartridge_controller, 0, sizeof( cartridge_controller ) );
     cartridge_bank = 0;
     cartridge_flags = 0;

@@ -25,6 +25,7 @@
 
 #include "wii_main.h"
 #include "Memory.h"
+#include "ExpansionModule.h"
 
 byte memory_ram[MEMORY_SIZE] = {0};
 byte memory_rom[MEMORY_SIZE] = {0};
@@ -53,6 +54,14 @@ void memory_Reset( ) {
 byte memory_Read(word address) {
   byte tmp_byte;
 
+  if (cartridge_xm) {
+    if ((address >= 0x0470 && address < 0x0480) ||
+        (xm_pokey_enabled && (address >= 0x0450 && address < 0x0470)) ||
+        (xm_mem_enabled && (address >= 0x4000 && address < 0x8000))) {
+      return xm_Read(address);
+    } 
+  } 
+    
   if( cartridge_pokey && address == POKEY_RANDOM )
   {
       return pokey_GetRegister( POKEY_RANDOM );
@@ -80,6 +89,14 @@ byte memory_Read(word address) {
 // Write
 // ----------------------------------------------------------------------------
 void memory_Write(word address, byte data) {
+
+  if (cartridge_xm &&
+      ((address >= 0x0470 && address < 0x0480) ||
+      ((xm_pokey_enabled && (address >= 0x0450 && address < 0x0470)) ||
+      (xm_mem_enabled && (address >= 0x4000 && address < 0x8000))))) {
+    xm_Write(address, data);
+    return;
+  }
 
   if(!memory_rom[address]) {
 

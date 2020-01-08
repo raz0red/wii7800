@@ -39,12 +39,20 @@
 // Tia.cpp
 // ----------------------------------------------------------------------------
 #include "Tia.h"
+#include <string.h>
+
+
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #define TIA_POLY4_SIZE 15
 #define TIA_POLY5_SIZE 31
 #define TIA_POLY9_SIZE 511
 
 byte tia_buffer[TIA_BUFFER_SIZE] = {0};
-uint tia_size = 524;
+uint tia_size = TIA_BUFFER_SIZE;
 
 static const byte TIA_POLY4[ ] = {1,1,0,1,1,1,0,0,0,0,1,0,1,0,0};
 static const byte TIA_POLY5[ ] = {0,0,1,0,1,1,0,0,1,1,1,1,1,0,0,0,1,1,0,1,1,1,0,1,0,1,0,0,0,0,1};
@@ -119,9 +127,8 @@ void tia_Reset( ) {
 // Clear
 // ----------------------------------------------------------------------------
 void tia_Clear( ) {
-  for(int index = 0; index < TIA_BUFFER_SIZE; index++) {
-    tia_buffer[index] = 0;
-  }
+  tia_soundCntr = 0;
+  memset(tia_buffer, 0, TIA_BUFFER_SIZE);
 }
 
 // ----------------------------------------------------------------------------
