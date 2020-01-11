@@ -398,7 +398,7 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
     wii_atari_init_palette8();
     prosystem_Reset();
 
-#if 0
+#if  0
     cartridge_xm = true;
 #endif    
     wii_atari_pause(false);

@@ -23,6 +23,12 @@
 // Maria.c
 // ----------------------------------------------------------------------------
 #include "Maria.h"
+
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #define MARIA_LINERAM_SIZE 160
 
 extern unsigned char* wii_sdl_get_blit_addr();
@@ -50,41 +56,30 @@ static byte maria_wmode;
 // StoreCell
 // ----------------------------------------------------------------------------
 static inline void maria_StoreCell(byte data) {
-  byte rmode = memory_ram[CTRL] & 3;  
-  if(maria_horizontal < MARIA_LINERAM_SIZE) {
+ if(maria_horizontal < MARIA_LINERAM_SIZE) {
     if(data) {
       maria_lineRAM[maria_horizontal] = maria_palette | data;
     }
     else { 
       byte kmode = memory_ram[CTRL] & 4;
-#ifdef K320_HACK
-      if(kmode && rmode != 2) {
-#else
       if(kmode) {
-#endif
         maria_lineRAM[maria_horizontal] = 0;
       }
     }
   }
-  maria_horizontal++;
-}
+  maria_horizontal++;}
 
 // ----------------------------------------------------------------------------
 // StoreCell
 // ----------------------------------------------------------------------------
-static inline void maria_StoreCell(byte high, byte low) {
-  byte rmode = memory_ram[CTRL] & 3;
+static inline void maria_StoreCell(byte high, byte low) {  
   if(maria_horizontal < MARIA_LINERAM_SIZE) {
     if(low || high) {
       maria_lineRAM[maria_horizontal] = maria_palette & 16 | high | low;
     }
     else { 
       byte kmode = memory_ram[CTRL] & 4;
-#ifdef K320_HACK
-      if(kmode && rmode != 2) {
-#else
       if(kmode) {
-#endif
         maria_lineRAM[maria_horizontal] = 0;
       }
     }
@@ -128,8 +123,11 @@ static inline void maria_StoreGraphic( ) {
   byte data = memory_ram[maria_pp.w];
   if(maria_wmode) {
     if(maria_IsHolyDMA( )) {
+#if 0 // Wii: disabled due to rendering in Kangaroo mode
       maria_StoreCell(0, 0);
       maria_StoreCell(0, 0);
+#endif      
+      maria_horizontal+=2;
     }
     else {
       maria_StoreCell((data & 12), (data & 192) >> 6);
@@ -138,17 +136,20 @@ static inline void maria_StoreGraphic( ) {
   }
   else {
     if(maria_IsHolyDMA( )) {
+#if 0 // Wii: disabled due to rendering in Kangaroo mode
       maria_StoreCell(0);
       maria_StoreCell(0);
       maria_StoreCell(0);
       maria_StoreCell(0);
+#endif      
+      maria_horizontal+=4;
     }
     else {
       maria_StoreCell((data & 192) >> 6);
       maria_StoreCell((data & 48) >> 4);
       maria_StoreCell((data & 12) >> 2);
       maria_StoreCell(data & 3);
-    }
+      }
   }
   maria_pp.w++;
 }
@@ -159,6 +160,7 @@ static inline void maria_StoreGraphic( ) {
 static inline void maria_WriteLineRAM(byte* buffer) {
   byte rmode = memory_ram[CTRL] & 3;
   if(rmode == 0) {
+    // 160A/B
     int pixel = 0;
     for(int index = 0; index < MARIA_LINERAM_SIZE; index += 4) {
       word color;
@@ -177,6 +179,7 @@ static inline void maria_WriteLineRAM(byte* buffer) {
     }
   }
   else if(rmode == 2) { 
+    // 320B/D
     int pixel = 0;
     for(int index = 0; index < MARIA_LINERAM_SIZE; index += 4) {
       buffer[pixel++] = maria_GetColor((maria_lineRAM[index + 0] & 16) | ((maria_lineRAM[index + 0] & 8) >> 3) | ((maria_lineRAM[index + 0] & 2)));
@@ -190,6 +193,7 @@ static inline void maria_WriteLineRAM(byte* buffer) {
     }
   }
   else if(rmode == 3) {
+    // 320A/C
     int pixel = 0;
     for(int index = 0; index < MARIA_LINERAM_SIZE; index += 4) {
       buffer[pixel++] = maria_GetColor((maria_lineRAM[index + 0] & 30));

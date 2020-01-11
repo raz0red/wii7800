@@ -66,6 +66,7 @@ extern std::string cartridge_filename;
 extern byte cartridge_type;
 extern byte cartridge_region;
 extern bool cartridge_pokey;
+extern bool cartridge_pokey450;
 extern bool cartridge_xm;
 extern byte cartridge_controller[2];
 extern byte cartridge_bank;

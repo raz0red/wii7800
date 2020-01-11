@@ -45,10 +45,8 @@ CFLAGS = \
     -g -O1 -Wall $(MACHDEP) $(INCLUDE) \
     -DNOCRYPT -DWII -DBIG_ENDIAN -DWII_BIN2O \
     -Wno-format-truncation \
-    -Wno-narrowing \
-    -DK320_HACK
-#   -DWII_NETTRACE
-          
+    -Wno-narrowing
+#-DWII_NETTRACE          
 #-DLOWTRACE -DDEBUG
 CXXFLAGS = $(CFLAGS)
 LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map

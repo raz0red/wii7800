@@ -45,6 +45,7 @@ std::string cartridge_filename;
 byte cartridge_type;
 byte cartridge_region;
 bool cartridge_pokey;
+bool cartridge_pokey450;
 byte cartridge_controller[2];
 byte cartridge_bank;
 uint cartridge_flags;
@@ -108,11 +109,43 @@ static uint cartridge_GetBankOffset(byte bank) {
 // WriteBank
 // ----------------------------------------------------------------------------
 static void cartridge_WriteBank(word address, byte bank) {
+#ifdef WII_NETTRACE              
+  net_print_string(NULL, 0, "Bank switch: %d, %d\n", address, bank);    
+#endif  
   uint offset = cartridge_GetBankOffset(bank);
   if(offset < cartridge_size) {
     memory_WriteROM(address, 16384, cartridge_buffer + offset);
     cartridge_bank = bank;
   }
+}
+
+static void cartridge_SetTypeBySize(uint size) {
+  if (size <= 0x10000) {
+      int old_type = cartridge_type;
+      cartridge_type = CARTRIDGE_TYPE_NORMAL;
+#ifdef WII_NETTRACE            
+      net_print_string(NULL, 0, "Update: no bits and <= 64k: %d, %d\n", old_type, cartridge_type);  
+#endif      
+    } else if (size == 0x24000 ) {
+      int old_type = cartridge_type;
+      cartridge_type = CARTRIDGE_TYPE_SUPERCART_LARGE;
+#ifdef WII_NETTRACE            
+      net_print_string(NULL, 0, "Update: size == 144k: %d, %d\n", old_type, cartridge_type);  
+#endif      
+    } else if (size == 0x20000 ) {
+                                
+      int old_type = cartridge_type;
+      cartridge_type = CARTRIDGE_TYPE_SUPERCART_ROM;
+#ifdef WII_NETTRACE            
+      net_print_string(NULL, 0, "Update: size == 128k: %d, %d\n", old_type, cartridge_type);  
+#endif      
+    } else {
+      int old_type = cartridge_type;
+      cartridge_type = CARTRIDGE_TYPE_SUPERCART;
+#ifdef WII_NETTRACE            
+      net_print_string(NULL, 0, "Update: default for > 64k: %d, %d\n", old_type, cartridge_type);  
+#endif      
+    }  
 }
 
 // ----------------------------------------------------------------------------
@@ -154,10 +187,10 @@ static void cartridge_ReadHeader(const byte* header) {
     }
   }
   else {
-    if(header[53] == 1) {
+    if(header[53] == 2 /*1*/) { // Wii: Abs and Act were swapped
       cartridge_type = CARTRIDGE_TYPE_ABSOLUTE;
     }
-    else if(header[53] == 2) {
+    else if(header[53] == 1 /*2*/) { // Wii: Abs and Act were swapped
       cartridge_type = CARTRIDGE_TYPE_ACTIVISION;
     }
     else {
@@ -165,18 +198,89 @@ static void cartridge_ReadHeader(const byte* header) {
     }
   }
   
-  cartridge_pokey = (header[54] & 1)? true: false;
+  cartridge_pokey = (header[54]&1)? true: false;
+  cartridge_pokey450 = (header[54]&0x40)? true : false;
+  if (cartridge_pokey450) {
+    cartridge_pokey = true;
+  }
   cartridge_controller[0] = header[55];
   cartridge_controller[1] = header[56];
   cartridge_region = header[57];
   cartridge_flags = 0;
   cartridge_xm = (header[63] & 1)? true: false;
 
-#if 0
-net_print_string(NULL, 0, "cartridge_type (from header): %d\n", cartridge_type);
-net_print_string(NULL, 0, "cartridge_type 53: %d\n", header[53]);
-net_print_string(NULL, 0, "cartridge_type 54: %d\n", header[54]);
-net_print_string(NULL, 0, "cartridge_xm (from header): %d\n", cartridge_xm);
+  // Wii: Updates to header interpretation
+  byte ct1 = header[54];
+  if(header[53] == 0) {
+    if ((ct1&0x0a)==0x0a) { // BIT1 and BIT3 (Supercart Large: 2) rom at $4000
+      int old_type = cartridge_type;
+      cartridge_type = CARTRIDGE_TYPE_SUPERCART_LARGE;
+#ifdef WII_NETTRACE      
+      net_print_string(NULL, 0, "Update: (0x10) bit1 & bit3: %d, %d\n", old_type, cartridge_type);  
+#endif      
+    } else if ((ct1&0x12)==0x12) { // BIT1 and BIT4 (Supercart ROM: 4) bank6 at $4000
+      int old_type = cartridge_type;
+      cartridge_type = CARTRIDGE_TYPE_SUPERCART_ROM;
+#ifdef WII_NETTRACE            
+      net_print_string(NULL, 0, "Update: (0x12) bit1 & bit4: %d, %d\n", old_type, cartridge_type);  
+#endif      
+    } else if ((ct1&0x06)==0x06) { // BIT1 and BIT2 (Supercart RAM: 3) ram at $4000
+      int old_type = cartridge_type;
+      cartridge_type = CARTRIDGE_TYPE_SUPERCART_RAM;
+#ifdef WII_NETTRACE            
+      net_print_string(NULL, 0, "Update: (0x06) bit1 & bit2: %d, %d\n", old_type, cartridge_type);  
+#endif      
+    } else if ((ct1&0x02)==0x02) { // BIT1 (Supercart) bank switched
+      int old_type = cartridge_type;
+      cartridge_type = CARTRIDGE_TYPE_SUPERCART;
+#ifdef WII_NETTRACE            
+      net_print_string(NULL, 0, "Update: (0x01) bit1: %d, %d\n", old_type, cartridge_type);  
+#endif      
+    } else {
+      // Attempt to determine the cartridge type based on its size
+      cartridge_SetTypeBySize(cartridge_size);
+    }
+  }
+
+#ifdef WII_NETTRACE
+  net_print_string(NULL, 0, "Header info:\n");  
+  if (ct1&0x01) {
+    net_print_string(NULL, 0, "  bit0: pokey at $4000\n");  
+  }
+  if (ct1&0x02) {
+    net_print_string(NULL, 0, "  bit1: supergame bank switched\n");    
+  }
+  if (ct1&0x04) {
+    net_print_string(NULL, 0, "  bit2: supergame ram at $4000\n");    
+  }
+  if (ct1&0x08) {
+    net_print_string(NULL, 0, "  bit3: rom at $4000\n");    
+  }
+  if (ct1&0x10) {
+    net_print_string(NULL, 0, "  bit4: bank 6 at $4000\n");  
+  }
+  if (ct1&0x20) {
+    net_print_string(NULL, 0, "  bit5: supergame banked ram\n");    
+  }
+  if (ct1&0x40) {
+    net_print_string(NULL, 0, "  bit6: pokey at $450\n");    
+  }
+  if (ct1&0x80) {
+    net_print_string(NULL, 0, "  bit7: mirror ram at $4000\n");    
+  }
+  net_print_string(NULL, 0, "  xm: %s\n", (cartridge_xm ? "1" : "0"));
+  net_print_string(NULL, 0, "  pokey: %s\n", (cartridge_pokey ? "1" : "0"));
+  net_print_string(NULL, 0, "  pokey450: %s\n", (cartridge_pokey450 ? "1" : "0"));
+  net_print_string(NULL, 0, "  tv type: %s\n", cartridge_region ? "PAL" : "NTSC");
+  net_print_string(NULL, 0, "  Save device: %s\n", 
+    ((header[48]&0x01) ? "SaveKey/AtariVox" : 
+      ((header[48]&0x02) ? "HSC" : "None")));
+  net_print_string(NULL, 0, "  controller1: %d\n", cartridge_controller[0]);
+  net_print_string(NULL, 0, "  controller2: %d\n", cartridge_controller[1]);
+  net_print_string(NULL, 0, "  cartridge_type 53: %d\n", header[53]);
+  net_print_string(NULL, 0, "  cartridge_type 54: %d\n", header[54]);
+  net_print_string(NULL, 0, "  cartridge_size: %d\n", cartridge_size);
+  net_print_string(NULL, 0, "cartridge_type (from header): %d\n", cartridge_type);
 #endif
 }
 
@@ -210,9 +314,11 @@ static bool cartridge_Load(const byte* data, uint size) {
   }
   else {
     cartridge_size = size;
+    // Attempt to guess the cartridge type based on its size
+    cartridge_SetTypeBySize(size);
   }
 
-#if 0
+#ifdef WII_NETTRACE
   net_print_string(NULL, 0, "cartridge_type: %d\n", cartridge_type);        
   net_print_string(NULL, 0, "cartridge_size: %d\n", cartridge_size);        
 #endif  
@@ -450,30 +556,34 @@ void cartridge_Store( ) {
     case CARTRIDGE_TYPE_NORMAL:
       memory_WriteROM(65536 - cartridge_size, cartridge_size, cartridge_buffer);
       break;
-    case CARTRIDGE_TYPE_SUPERCART:
-      if(cartridge_GetBankOffset(7) < cartridge_size) {
-        memory_WriteROM(49152, 16384, cartridge_buffer + cartridge_GetBankOffset(7));
+    case CARTRIDGE_TYPE_SUPERCART: {
+      uint offset = cartridge_size - 16384;
+      if(offset < cartridge_size) {
+        memory_WriteROM(49152, 16384, cartridge_buffer + offset /*cartridge_GetBankOffset(7)*/);
       }
-      break;
-    case CARTRIDGE_TYPE_SUPERCART_LARGE:
-      if(cartridge_GetBankOffset(8) < cartridge_size) {
-        // cartridge_size - 16384
-        memory_WriteROM(49152, 16384, cartridge_buffer + cartridge_GetBankOffset(8));
+    } break;
+    case CARTRIDGE_TYPE_SUPERCART_LARGE: {
+      uint offset = cartridge_size - 16384;
+      if(offset < cartridge_size) {
+        memory_WriteROM(49152, 16384, cartridge_buffer + offset /*cartridge_GetBankOffset(8)*/);
         memory_WriteROM(16384, 16384, cartridge_buffer + cartridge_GetBankOffset(0));
       }
-      break;
-    case CARTRIDGE_TYPE_SUPERCART_RAM:
-      if(cartridge_GetBankOffset(7) < cartridge_size) {
-        memory_WriteROM(49152, 16384, cartridge_buffer + cartridge_GetBankOffset(7));
+    } break;
+    case CARTRIDGE_TYPE_SUPERCART_RAM: {
+      uint offset = cartridge_size - 16384;
+      if(offset < cartridge_size) {
+        memory_WriteROM(49152, 16384, cartridge_buffer + offset /*cartridge_GetBankOffset(7)*/);
         memory_ClearROM(16384, 16384);
       }
-      break;
-    case CARTRIDGE_TYPE_SUPERCART_ROM:
-      if(cartridge_GetBankOffset(7) < cartridge_size && cartridge_GetBankOffset(6) < cartridge_size) {
-        memory_WriteROM(49152, 16384, cartridge_buffer + cartridge_GetBankOffset(7));
-        memory_WriteROM(16384, 16384, cartridge_buffer + cartridge_GetBankOffset(6));
+    } break;
+    case CARTRIDGE_TYPE_SUPERCART_ROM: {
+      uint offset = cartridge_size - 16384;
+      uint offset2 = offset - 16384;
+      if(offset < cartridge_size && offset2 < cartridge_size) {
+        memory_WriteROM(49152, 16384, cartridge_buffer + offset /*cartridge_GetBankOffset(7)*/);
+        memory_WriteROM(16384, 16384, cartridge_buffer + offset2 /*cartridge_GetBankOffset(6)*/);
       }
-      break;
+    } break;
     case CARTRIDGE_TYPE_ABSOLUTE:
       memory_WriteROM(16384, 16384, cartridge_buffer);
       memory_WriteROM(32768, 32768, cartridge_buffer + cartridge_GetBankOffset(2));
@@ -494,19 +604,24 @@ void cartridge_Store( ) {
 // Write
 // ----------------------------------------------------------------------------
 void cartridge_Write(word address, byte data) {
+#if 0
+  net_print_string(NULL, 0, "Cartridge write: %d, %d\n", address, data);            
+#endif
   switch(cartridge_type) {
     case CARTRIDGE_TYPE_SUPERCART:
     case CARTRIDGE_TYPE_SUPERCART_RAM:
-    case CARTRIDGE_TYPE_SUPERCART_ROM:
-      if(address >= 32768 && address < 49152 && data < 9) {
+    case CARTRIDGE_TYPE_SUPERCART_ROM: {
+      uint maxbank = cartridge_size / 16384;
+      if(address >= 32768 && address < 49152 && data < maxbank /*9*/) {
         cartridge_StoreBank(data);
       }
-      break;
-    case CARTRIDGE_TYPE_SUPERCART_LARGE:
-      if(address >= 32768 && address < 49152 && data < 9) {
+    } break;
+    case CARTRIDGE_TYPE_SUPERCART_LARGE: {
+      uint maxbank = cartridge_size / 16384;
+      if(address >= 32768 && address < 49152 && data < maxbank /*9*/) {
         cartridge_StoreBank(data + 1);
       }
-      break;
+    } break;
     case CARTRIDGE_TYPE_ABSOLUTE:
       if(address == 32768 && (data == 1 || data == 2)) {
         cartridge_StoreBank(data - 1);
@@ -519,6 +634,7 @@ void cartridge_Write(word address, byte data) {
       break;
   }
 
+#if 0 // WIi: Moved to Memory.cpp
   if(cartridge_pokey && address >= 0x4000 && address <= 0x400f) {
     switch(address) {
       case POKEY_AUDF1:
@@ -553,6 +669,7 @@ void cartridge_Write(word address, byte data) {
         break;
     }
   }
+#endif  
 }
 
 // ----------------------------------------------------------------------------
@@ -608,6 +725,7 @@ void cartridge_Release( ) {
     cartridge_type = 0;
     cartridge_region = 0;
     cartridge_pokey = 0;
+    cartridge_pokey450 = 0;
     cartridge_xm = false;
     memset( cartridge_controller, 0, sizeof( cartridge_controller ) );
     cartridge_bank = 0;

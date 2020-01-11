@@ -99,7 +99,7 @@ void xm_Write(word address, byte data) {
 #endif        
         xm_ram[(xm_bank * 0x4000) + (address - 0x4000)] = data;
     } else if (address >= 0x0470 && address < 0x0480) {
-#if 0        
+#ifdef WII_NETTRACE            
         net_print_string(NULL, 0, "Wrote to XCTRL 0x0470: %x %d\n", address,
                          data);
 #endif                         

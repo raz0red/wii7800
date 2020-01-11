@@ -76,7 +76,7 @@
 #define SK_RESET	0x03
 
 byte pokey_buffer[POKEY_BUFFER_SIZE] = {0};
-uint pokey_size = POKEY_BUFFER_SIZE; // 524
+uint pokey_size = (POKEY_BUFFER_SIZE - 512); // 524
 
 static uint pokey_frequency = 1787520;
 static uint pokey_sampleRate = 31440;
@@ -106,6 +106,10 @@ static uint r9;
 static uint r17;
 static byte SKCTL;
 byte RANDOM;
+
+#ifdef WII_NETTRACE
+int pokey_debug_count = 100;
+#endif
 
 byte POT_input[8] = {228, 228, 228, 228, 228, 228, 228, 228};
 static int pot_scanline;
@@ -138,6 +142,10 @@ void pokey_setSampleRate( uint rate ) {
 // Reset
 // ----------------------------------------------------------------------------
 void pokey_Reset( ) {
+#ifdef WII_NETTRACE
+  pokey_debug_count = 100;
+#endif
+
 	pot_scanline = 0;
   pokey_soundCntr = 0;
 
@@ -198,8 +206,9 @@ void pokey_Scanline() {
 }
 
 byte pokey_GetRegister(word address) {
-#if 0  
-net_print_string(NULL, 0, "pokey_getRegister: %d\n", address);  
+#ifdef WII_NETTRACE
+  if ((pokey_debug_count--)>0)
+    net_print_string(NULL, 0, "pokey_getRegister: %d\n", address);  
 #endif
   byte data = 0;
 
@@ -257,8 +266,9 @@ net_print_string(NULL, 0, "pokey_getRegister: %d\n", address);
 // SetRegister
 // ----------------------------------------------------------------------------
 void pokey_SetRegister(word address, byte value) {
-#if 0  
-net_print_string(NULL, 0, "pokey_setRegister: %d %d\n", address, value);
+#ifdef WII_NETTRACE
+  if ((pokey_debug_count--)>0)
+    net_print_string(NULL, 0, "pokey_setRegister: %d %d\n", address, value);
 #endif
 
 	byte channelMask;
