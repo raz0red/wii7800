@@ -123,17 +123,11 @@ extern float wii_orient_roll;
 void prosystem_ExecuteFrame(const byte* input) 
 {
     // Is WSYNC enabled for the current frame?
-    bool wsync = 
-        ( ( wii_cart_wsync == CART_MODE_ENABLED ) ||
-          ( ( wii_cart_wsync == CART_MODE_AUTO ) &&
-            ( !( cartridge_flags & CARTRIDGE_WSYNC_MASK ) ) ) );
+    bool wsync = !( cartridge_flags & CARTRIDGE_WSYNC_MASK );
     dbg_wsync = wsync;
 
     // Is Maria cycle stealing enabled for the current frame?
-    bool cycle_stealing = 
-        ( ( wii_cart_cycle_stealing == CART_MODE_ENABLED ) ||
-          ( ( wii_cart_cycle_stealing == CART_MODE_AUTO ) &&
-            ( !( cartridge_flags & CARTRIDGE_CYCLE_STEALING_MASK ) ) ) );
+    bool cycle_stealing = !( cartridge_flags & CARTRIDGE_CYCLE_STEALING_MASK );
     dbg_cycle_stealing = cycle_stealing;
 
     // Is the lightgun enabled for the current frame?

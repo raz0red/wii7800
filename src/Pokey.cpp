@@ -222,7 +222,7 @@ byte pokey_GetRegister(word address) {
 
   switch (address) {
     case POKEY_ALLPOT: {
-      byte b;
+      byte b = 0;
 			for (int i = 0; i < 8; i++)
 				if (POT_input[addr] <= pot_scanline)
 					b &= ~(1 << i);		/* reset bit if pot value known */
@@ -276,13 +276,12 @@ void pokey_SetRegister(word address, byte value) {
     case POKEY_POTGO:
       if (!(SKCTL & 4))
         pot_scanline = 0;	/* slow pot mode */
-      break;
+      return;
 
     case POKEY_SKCTLS:
       SKCTL = value;
       if (value & 4)
         pot_scanline = 228;	/* fast pot mode - return results immediately */
-      break;
       return;
 
     case POKEY_AUDF1:
@@ -429,8 +428,14 @@ void pokey_SetRegister(word address, byte value) {
 
   for(byte channel = POKEY_CHANNEL1; channel <= POKEY_CHANNEL4; channel++) {
     if(channelMask & (1 << channel)) {
-      if((pokey_audc[channel] & POKEY_VOLUME_ONLY) || ((pokey_audc[channel] & POKEY_VOLUME_MASK) == 0) || (pokey_divideMax[channel] < (pokey_sampleMax >> 8))) {
+      if((pokey_audc[channel] & POKEY_VOLUME_ONLY) || 
+        ((pokey_audc[channel] & POKEY_VOLUME_MASK) == 0) || 
+        (pokey_divideMax[channel] < (pokey_sampleMax >> 8))) {
+#if 1 // WII
+        pokey_outVol[channel] = 1;
+#else
         pokey_outVol[channel] = pokey_audc[channel] & POKEY_VOLUME_MASK;
+#endif
         pokey_divideCount[channel] = 0x7fffffff;
         pokey_divideMax[channel] = 0x7fffffff;
       }

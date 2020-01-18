@@ -27,6 +27,11 @@
 #include <SDL.h>
 #include "wii_direct_sound.h"
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #define SOUND_SOURCE "Sound.cpp"
 
 int wii_sound_length = 0;
@@ -77,17 +82,16 @@ static void sound_Resample(const byte* source, byte* target, int length) {
   int measurement = sound_format.nSamplesPerSec;
   int sourceIndex = 0;
   int targetIndex = 0;
-  
-  int max = ( ( prosystem_frequency * prosystem_scanlines ) << 1 );
-  while(targetIndex < length) {
-    if(measurement >= max) {
-      target[targetIndex++] = source[sourceIndex];
-      measurement -= max;
-    }
-    else {
-      sourceIndex++;
-      measurement += sound_format.nSamplesPerSec;
-    }
+
+  int max = ((prosystem_frequency * prosystem_scanlines) << 1);
+  while (targetIndex < length) {
+      if (measurement >= max) {
+          target[targetIndex++] = source[sourceIndex];
+          measurement -= max;
+      } else {
+          sourceIndex++;
+          measurement += sound_format.nSamplesPerSec;
+      }
   }
 }
 
@@ -115,7 +119,15 @@ bool sound_SetFormat(WAVEFORMATEX format) {
 byte sample[MAX_BUFFER_SIZE] = {0};
 byte pokeySample[MAX_BUFFER_SIZE] = {0};
 
+#ifdef TRACE_SOUND
+static int maxTia = 0, minTia = 0, maxPokey = 0, minPokey = 0;
+static u64 sumTia = 0, sumPokey = 0;
+static int scount = 0;
+static u64 stotalCount = 0;
+#endif
+
 bool sound_Store( ) {
+  bool pokey =  (cartridge_pokey || xm_pokey_enabled);
 
   if( sound_muted ) sound_SetMuted( false );
   memset( sample, 0, MAX_BUFFER_SIZE );  
@@ -123,17 +135,48 @@ bool sound_Store( ) {
   sound_Resample(tia_buffer, sample, length);
   tia_Clear(); // WII
   
-  if(cartridge_pokey || xm_pokey_enabled) {    
+  if(pokey) {    
     memset( pokeySample, 0, MAX_BUFFER_SIZE );
     sound_Resample(pokey_buffer, pokeySample, length);    
     for(uint index = 0; index < length; index++) {
-      sample[index] += pokeySample[index];
-      sample[index] = sample[index] / 2;
+#ifdef TRACE_SOUND      
+      stotalCount++;      
+      if (sample[index] > maxTia) maxTia = sample[index];
+      if (sample[index] < minTia) minTia = sample[index];
+      if (pokeySample[index] > maxPokey) maxPokey = pokeySample[index];
+      if (pokeySample[index] < minPokey) minPokey = pokeySample[index];
+      sumTia += sample[index];
+      sumPokey += pokeySample[index];            
+#endif    
+      u32 sound = sample[index] + pokeySample[index];      
+      sample[index] = sound >> 1;
     }
-  }  
+  } 
+#ifdef TRACE_SOUND  
+  else {
+    for(uint index = 0; index < length; index++) {
+      stotalCount++;
+      sumTia += sample[index];      
+      if (sample[index] > maxTia) maxTia = sample[index];
+      if (sample[index] < minTia) minTia = sample[index];      
+    }
+  }
+#endif  
   pokey_Clear(); // WII
 
-  wii_storeSound( sample, length );  
+  wii_storeSound( sample, length );
+
+#ifdef TRACE_SOUND
+  if (scount++ == 60) {
+    net_print_string(NULL, 0, "Pokey: max %d, min %d, avg: %f (sum:%llu, count:%llu)\n", 
+      maxPokey, minPokey, (sumPokey/(double)stotalCount), sumPokey, stotalCount);
+    net_print_string(NULL, 0, "TIA: max %d, min %d, avg: %f (sum:%llu, count:%llu)\n", 
+      maxTia, minTia, (sumTia/(double)stotalCount), sumTia, stotalCount);      
+    scount = stotalCount = 0;
+    maxPokey = minPokey = sumPokey = 0;
+    maxTia = minTia = sumTia = 0;
+  }  
+#endif
      
   return true;
 }
@@ -142,9 +185,7 @@ bool sound_Store( ) {
 // Play
 // ----------------------------------------------------------------------------
 bool sound_Play( ) {  
-  memset( sample, 0, MAX_BUFFER_SIZE );
-  wii_storeSound( sample, 1024 );
-  //ResetAudio();
+  ResetAudio();
   return true;
 }
 
@@ -152,9 +193,7 @@ bool sound_Play( ) {
 // Stop
 // ----------------------------------------------------------------------------
 bool sound_Stop( ) {
-  memset( sample, 0, MAX_BUFFER_SIZE );
-  wii_storeSound( sample, 1024 );
-  //StopAudio();
+  StopAudio();
   return true;
 }
 

@@ -53,7 +53,11 @@ int cartridge_crosshair_x;
 int cartridge_crosshair_y;
 bool cartridge_dualanalog = false;
 bool cartridge_xm = false;
+bool cartridge_disable_bios = false;
 uint cartridge_hblank = 34;
+byte cartridge_left_switch = 1;
+byte cartridge_right_switch = 0;
+bool cartridge_swap_buttons = false;
 
 // Whether the cartridge has accessed the high score ROM (indicates that the
 // SRAM should be persisted when the cartridge is unloaded)
@@ -109,7 +113,7 @@ static uint cartridge_GetBankOffset(byte bank) {
 // WriteBank
 // ----------------------------------------------------------------------------
 static void cartridge_WriteBank(word address, byte bank) {
-#ifdef WII_NETTRACE              
+#ifdef TRACE_BANK_SWITCH              
   net_print_string(NULL, 0, "Bank switch: %d, %d\n", address, bank);    
 #endif  
   uint offset = cartridge_GetBankOffset(bank);
@@ -722,6 +726,7 @@ void cartridge_Release( ) {
     // These values need to be reset so that moving between carts works
     // consistently. This seems to be a ProSystem emulator bug.
     //
+    cartridge_title = "";
     cartridge_type = 0;
     cartridge_region = 0;
     cartridge_pokey = 0;
@@ -730,10 +735,14 @@ void cartridge_Release( ) {
     memset( cartridge_controller, 0, sizeof( cartridge_controller ) );
     cartridge_bank = 0;
     cartridge_flags = 0;
+    cartridge_disable_bios = false;
     cartridge_crosshair_x = 0;
     cartridge_crosshair_y = 0;    
     high_score_set = false;
-    cartridge_hblank = 34;
+    cartridge_hblank = HBLANK_DEFAULT;
     cartridge_dualanalog = false;
+    cartridge_left_switch = 1;
+    cartridge_right_switch = 0;
+    cartridge_swap_buttons = false;
   }
 }

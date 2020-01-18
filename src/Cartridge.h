@@ -46,6 +46,8 @@
 #include "Pokey.h"
 #include "Archive.h"
 
+#define HBLANK_DEFAULT 34
+
 typedef unsigned char byte;
 typedef unsigned short word;
 typedef unsigned int uint;
@@ -71,6 +73,10 @@ extern bool cartridge_xm;
 extern byte cartridge_controller[2];
 extern byte cartridge_bank;
 extern uint cartridge_flags;
+extern bool cartridge_disable_bios;
+extern byte cartridge_left_switch;
+extern byte cartridge_right_switch;
+extern bool cartridge_swap_buttons;
 
 // The x offset for the lightgun crosshair (allows per cartridge adjustments)
 extern int cartridge_crosshair_x;

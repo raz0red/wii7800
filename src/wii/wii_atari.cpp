@@ -31,6 +31,7 @@
 |                                                                            |
 \*--------------------------------------------------------------------------*/
 
+#include "Cartridge.h"
 #include "Database.h"
 #include "Sound.h"
 #include "Timer.h"
@@ -57,6 +58,7 @@
 #include "wii_atari_emulation.h"
 #include "wii_atari_input.h"
 #include "wii_atari_sdl.h"
+#include "wii_atari_db.h"
 
 #ifdef WII_NETTRACE
 #include <network.h>
@@ -87,16 +89,10 @@ byte atari_pal8[256] = {0};
 BOOL wii_lightgun_flash = TRUE;
 /** Whether to display a crosshair for the lightgun */
 BOOL wii_lightgun_crosshair = TRUE;
-/** Whether wsync is enabled/disabled */
-u8 wii_cart_wsync = CART_MODE_AUTO;
-/** Whether cycle stealing is enabled/disabled */
-u8 wii_cart_cycle_stealing = CART_MODE_AUTO;
 /** Whether high score cart is enabled */
 BOOL wii_hs_enabled = TRUE;
 /** What mode the high score cart is in */
 BOOL wii_hs_mode = HSMODE_ENABLED_NORMAL;
-/** Whether to swap buttons */
-BOOL wii_swap_buttons = FALSE;
 /** If the difficulty switches are enabled */
 BOOL wii_diff_switch_enabled = FALSE;
 /** When to display the difficulty switches */
@@ -131,7 +127,7 @@ static bool left_difficulty_down = false;
 /** Whether the right difficulty switch is on */
 static bool right_difficulty_down = false;
 /** The keyboard (controls) data */
-static unsigned char keyboard_data[19];
+unsigned char keyboard_data[19];
 /** The amount of time to wait before reading the difficulty switches */
 static int diff_wait_count = 0;
 /** The amount of time left to display the difficulty switch values */
@@ -355,12 +351,12 @@ void wii_reset_keyboard_data() {
     memset(keyboard_data, 0, sizeof(keyboard_data));
 
     // Left difficulty switch defaults to off
-    keyboard_data[15] = 1;
+    keyboard_data[15] = cartridge_left_switch;
     left_difficulty_down = false;
 
-    // Right difficulty swtich defaults to on
-    keyboard_data[16] = 0;
-    right_difficulty_down = true;
+    // Right difficulty switch defaults to on
+    keyboard_data[16] = cartridge_right_switch;
+    right_difficulty_down = false;
 
     diff_wait_count = prosystem_frequency * 0.75;
     diff_display_count = 0;
@@ -380,8 +376,11 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
 
     database_Load(cartridge_digest);
 
+    // Provide opportunity to capture settings
+    wii_atari_db_after_load();
+
     bios_enabled = false;
-    if (loadbios) {
+    if (loadbios && !cartridge_disable_bios)  {
         char boot_rom[WII_MAX_PATH];
         snprintf(boot_rom, WII_MAX_PATH, "%s%s", wii_get_fs_prefix(),
                  (cartridge_region == REGION_PAL ? WII_ROOT_BOOT_ROM_PAL
@@ -394,13 +393,22 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
         }
     }
 
+#ifdef WII_NETTRACE
+    net_print_string(NULL, 0, "Final values:\n");  
+    net_print_string(NULL, 0, "  xm: %s\n", (cartridge_xm ? "1" : "0"));
+    net_print_string(NULL, 0, "  pokey: %s\n", (cartridge_pokey ? "1" : "0"));
+    net_print_string(NULL, 0, "  pokey450: %s\n", (cartridge_pokey450 ? "1" : "0"));
+    net_print_string(NULL, 0, "  tv type: %s\n", cartridge_region ? "PAL" : "NTSC");
+    net_print_string(NULL, 0, "  controller1: %d\n", cartridge_controller[0]);
+    net_print_string(NULL, 0, "  controller2: %d\n", cartridge_controller[1]);
+    net_print_string(NULL, 0, "  cartridge_type: %d\n", cartridge_type);
+    net_print_string(NULL, 0, "  bios disabled: %s\n", cartridge_disable_bios ? "1" : "0");
+#endif
+
     wii_reset_keyboard_data();
     wii_atari_init_palette8();
     prosystem_Reset();
 
-#if  0
-    cartridge_xm = true;
-#endif    
     wii_atari_pause(false);
 
     return true;
@@ -714,13 +722,13 @@ static void wii_atari_update_joystick(int joyIndex,
              gcHeld & GC_BUTTON_ATARI_UP || wii_analog_up(expY, gcY) ||
              wii_analog_up(expRjsY, gcRjsY));
         // | 04 10     | Joystick 1 2 | Button 1
-        keyboard_data[wii_swap_buttons ? 4 + offset : 5 + offset] =
+        keyboard_data[cartridge_swap_buttons ? 4 + offset : 5 + offset] =
             (held & (WII_BUTTON_ATARI_FIRE |
                      (isClassic ? WII_CLASSIC_ATARI_FIRE
                                 : WII_NUNCHECK_ATARI_FIRE)) ||
              gcHeld & GC_BUTTON_ATARI_FIRE);
         // | 05 11     | Joystick 1 2 | Button 2
-        keyboard_data[wii_swap_buttons ? 5 + offset : 4 + offset] =
+        keyboard_data[cartridge_swap_buttons ? 5 + offset : 4 + offset] =
             (held & (WII_BUTTON_ATARI_FIRE_2 |
                      (isClassic ? WII_CLASSIC_ATARI_FIRE_2
                                 : WII_NUNCHECK_ATARI_FIRE_2)) ||

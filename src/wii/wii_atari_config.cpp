@@ -61,14 +61,8 @@ void wii_config_handle_read_value(char* name, char* value) {
         wii_diff_switch_display = Util_sscandec(value);
     } else if (strcmp(name, "diff_switch_enabled") == 0) {
         wii_diff_switch_enabled = Util_sscandec(value);
-    } else if (strcmp(name, "swap_buttons") == 0) {
-        wii_swap_buttons = Util_sscandec(value);
     } else if (strcmp(name, "high_score_cart") == 0) {
         wii_hs_mode = Util_sscandec(value);
-    } else if (strcmp(name, "cart_wsync") == 0) {
-        wii_cart_wsync = Util_sscandec(value);
-    } else if (strcmp(name, "cart_cycle_stealing") == 0) {
-        wii_cart_cycle_stealing = Util_sscandec(value);
     } else if (strcmp(name, "lightgun_crosshair") == 0) {
         wii_lightgun_crosshair = Util_sscandec(value);
     } else if (strcmp(name, "lightgun_flash") == 0) {
@@ -115,11 +109,8 @@ void wii_config_handle_write_config(FILE* fp) {
     fprintf(fp, "top_menu_exit=%d\n", wii_top_menu_exit);
     fprintf(fp, "vsync=%d\n", wii_vsync);
     fprintf(fp, "diff_switch_display=%d\n", wii_diff_switch_display);
-    fprintf(fp, "swap_buttons=%d\n", wii_swap_buttons);
     fprintf(fp, "diff_switch_enabled=%d\n", wii_diff_switch_enabled);
     fprintf(fp, "high_score_cart=%d\n", wii_hs_mode);
-    fprintf(fp, "cart_wsync=%d\n", wii_cart_wsync);
-    fprintf(fp, "cart_cycle_stealing=%d\n", wii_cart_cycle_stealing);
     fprintf(fp, "lightgun_crosshair=%d\n", wii_lightgun_crosshair);
     fprintf(fp, "lightgun_flash=%d\n", wii_lightgun_flash);
     fprintf(fp, "screen_x=%d\n", wii_screen_x);

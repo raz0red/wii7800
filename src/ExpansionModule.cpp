@@ -107,5 +107,10 @@ void xm_Write(word address, byte data) {
         xm_bank = xm_reg & 7;
         xm_pokey_enabled = (xm_reg & 0x10);
         xm_mem_enabled = (xm_reg & 0x08);
+#ifdef WII_NETTRACE            
+        net_print_string(NULL, 0, "xm_reg: %d, xm_bank: %d, xm_pokey_enabled: %d, xm_mem_enabled: %d\n", 
+            xm_reg, xm_bank, xm_pokey_enabled, xm_mem_enabled);
+#endif                         
+
     } 
 }

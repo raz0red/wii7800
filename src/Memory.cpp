@@ -224,7 +224,7 @@ if( address >= 0x1000 && address <= 0x17FF )
 // ----------------------------------------------------------------------------
 // WriteROM
 // ----------------------------------------------------------------------------
-void memory_WriteROM(word address, word size, const byte* data) {
+void memory_WriteROM(word address, uint size, const byte* data) {
   if((address + size) <= MEMORY_SIZE && data != NULL) {
     for(uint index = 0; index < size; index++) {
       memory_ram[address + index] = data[index];
@@ -236,7 +236,7 @@ void memory_WriteROM(word address, word size, const byte* data) {
 // ----------------------------------------------------------------------------
 // ClearROM
 // ----------------------------------------------------------------------------
-void memory_ClearROM(word address, word size) {
+void memory_ClearROM(word address, uint size) {
   if((address + size) <= MEMORY_SIZE) {
     for(uint index = 0; index < size; index++) {
       memory_ram[address + index] = 0;

@@ -78,6 +78,7 @@ static void AudioSwitchBuffers() {
 
     DCFlushRange(soundbuffer[whichab], len);
     AUDIO_InitDMA((u32)soundbuffer[whichab], len);
+    AUDIO_StartDMA();
     whichab ^= 1;
     IsPlaying = 1;
 }
@@ -106,10 +107,6 @@ void StopAudio() {
     IsPlaying = 0;
 }
 
-#if 0
-u32 sound_max = 0;
-#endif
-
 /****************************************************************************
  * ResetAudio
  *
@@ -135,12 +132,6 @@ void PlaySound(u8* Buffer, int count) {
 
     for (i = 0; i < count; i++) {
         sample = ((Buffer[i] << 8) /*- 1*/) & 0xff00;
-#if 0        
-        if( sample > sound_max ) {
-          sound_max = sample;
-          net_print_string(NULL, 0, "sound max: %d\n", sound_max);    
-        }    
-#endif    
         dst[mixhead++] = sample | (sample << 16);
         if (mixhead == MIXBUFSIZE_WORDS)
             mixhead = 0;

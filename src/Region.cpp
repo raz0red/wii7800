@@ -206,5 +206,5 @@ void region_Reset( ) {
     pokey_size = 524;
 #endif    
   }
-  pokey_setSampleRate( ( prosystem_scanlines * prosystem_frequency ) << 1 );
+  pokey_setSampleRate((prosystem_scanlines * prosystem_frequency) << 1);
 }
