@@ -35,5 +35,6 @@ extern void database_Initialize( );
 extern bool database_Load(std::string digest);
 extern bool database_enabled;
 extern std::string database_filename;
+extern bool cart_in_db;
 
 #endif

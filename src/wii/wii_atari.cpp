@@ -847,12 +847,13 @@ void wii_render_callback() {
              * riot_drb, memory_ram[SWCHB] */
             sprintf(text,
                     "v: %.2f, hs: %d, %d, timer: %d, wsync: %s, %d, stl: %s, "
-                    "mar: %d, cpu: %d, ext: %d, rnd: %d, hb: %d",
+                    "mar: %d, cpu: %d, ext: %d, rnd: %d, hb: %d, db: %s",
                     wii_fps_counter, high_score_set, hs_sram_write_count,
                     (riot_timer_count % 1000), (dbg_wsync ? "1" : "0"),
                     dbg_wsync_count, (dbg_cycle_stealing ? "1" : "0"),
                     dbg_maria_cycles, dbg_p6502_cycles, dbg_saved_cycles,
-                    RANDOM, cartridge_hblank);
+                    RANDOM, cartridge_hblank,
+                    cart_in_db ? "1" : "0");
 #if 0
     ", roll: %f"
     , wii_orient_roll

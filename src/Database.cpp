@@ -33,6 +33,7 @@
 
 #define DATABASE_SOURCE "Database.cpp"
 
+bool cart_in_db = false;
 bool database_enabled = true;
 std::string database_filename = "./prosystem.dat";
 
@@ -48,7 +49,8 @@ char database_loc[WII_MAX_PATH] = "";
 // ----------------------------------------------------------------------------
 // Load
 // ----------------------------------------------------------------------------
-bool database_Load(std::string digest) {
+bool database_Load(std::string digest) {    
+  cart_in_db = false;
   if(database_enabled) {
 #ifndef WII
       FILE* file = fopen(database_filename.c_str(), "r");
@@ -72,6 +74,7 @@ bool database_Load(std::string digest) {
           std::string line = buffer;
           if (line.compare(1, 32, digest.c_str()) == 0) {
               found = true;
+              cart_in_db = true;
               std::string entry[count];
               for (int index = 0; index < count; index++) {
                   buffer[0] = '\0';
