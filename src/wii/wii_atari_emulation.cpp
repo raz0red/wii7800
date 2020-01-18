@@ -158,6 +158,11 @@ BOOL wii_start_emulation(char* romfile,
             free(old_last);
         }
 
+        // This was a newly loaded rom, set snapshot index to latest snapshot
+        if (!loadsave && !reset && !resume) {
+            wii_snapshot_reset(TRUE);
+        }
+
         if (wii_max_frame_rate != 0) {
             prosystem_frequency = wii_max_frame_rate;
         }
