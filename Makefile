@@ -45,7 +45,7 @@ CFLAGS = \
     -g -O1 -Wall $(MACHDEP) $(INCLUDE) \
     -DNOCRYPT -DWII -DBIG_ENDIAN -DWII_BIN2O \
     -Wno-format-truncation \
-    -Wno-narrowing
+    -Wno-narrowing 
 #-DWII_NETTRACE          
 #-DLOWTRACE -DDEBUG
 CXXFLAGS = $(CFLAGS)

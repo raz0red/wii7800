@@ -39,15 +39,14 @@ if you wanted to. However since the PLD is soldered under the POKEY this needs t
 #include "net_print.h"
 #endif
 
-#define RAM_SIZE 0x20000
-byte xm_ram[RAM_SIZE] = {0};
+byte xm_ram[XM_RAM_SIZE] = {0};
 byte xm_reg = 0;
 byte xm_bank = 0;
 bool xm_pokey_enabled = false;
 bool xm_mem_enabled = false;
 
 void xm_Reset() {
-  memset(xm_ram, 0, RAM_SIZE);
+  memset(xm_ram, 0, XM_RAM_SIZE);
   xm_bank = 0;
   xm_reg = 0;
   xm_mem_enabled = false;
