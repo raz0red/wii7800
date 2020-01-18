@@ -187,7 +187,7 @@ static void write_entry(FILE* file, const char* hash) {
         fprintf(file, "swapbuttons=%s\n", cartridge_swap_buttons ? "true" : "false");
     }
     if (bothJoystick && cartridge_dualanalog) {
-        fprintf(file, "dualanalog=%s\n", cartridge_swap_buttons ? "true" : "false");
+        fprintf(file, "dualanalog=%s\n", cartridge_dualanalog ? "true" : "false");
     }
     if (cart_settings.hblank != HBLANK_DEFAULT) {
         fprintf(file, "hblank=%d\n", cart_settings.hblank);
