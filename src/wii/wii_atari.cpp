@@ -960,7 +960,7 @@ void wii_atari_main_loop(int testframes) {
     // Only enable lightgun if the cartridge supports it and we are displaying
     // at 2x.
     lightgun_enabled =
-        (cartridge_controller[0] & CARTRIDGE_CONTROLLER_LIGHTGUN);
+        (cartridge_controller[0] == CARTRIDGE_CONTROLLER_LIGHTGUN);
 
     float fps_counter;
     u32 timerCount = 0;

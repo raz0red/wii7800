@@ -74,6 +74,14 @@ void wii_atari_db_select_node(TREENODE* node);
 BOOL wii_atari_db_is_node_visible(TREENODE* node);
 
 /**
+ * Determines whether the node is selectable
+ *
+ * @param   node The node
+ * @return  Whether the node is selectable
+ */
+BOOL wii_atari_db_is_node_selectable(TREENODE* node);
+
+/**
  * Checks to see if an entry exists in the database for the current game
  * 
  * @return  Whether an entry exists in the database for the current game

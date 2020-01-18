@@ -750,6 +750,11 @@ BOOL wii_menu_handle_is_node_selectable(TREENODE* node) {
     if (node->node_type == NODETYPE_CARTRIDGE_SETTINGS_SPACER) {
         return FALSE;
     }
+
+    if (!wii_atari_db_is_node_selectable(node)) {
+        return FALSE;
+    }
+    
     return TRUE;
 }
 

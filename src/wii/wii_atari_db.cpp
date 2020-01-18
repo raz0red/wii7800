@@ -762,3 +762,15 @@ BOOL wii_atari_db_is_node_visible(TREENODE* node) {
    return TRUE;    
 }
 
+/**
+ * Determines whether the node is selectable
+ *
+ * @param   node The node
+ * @return  Whether the node is selectable
+ */
+BOOL wii_atari_db_is_node_selectable(TREENODE* node) {
+    return node->node_type != NODETYPE_CART_SETTINGS_CONTROLS_SPACER;
+}
+
+
+
