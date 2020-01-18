@@ -214,23 +214,23 @@ void wii_atari_menu_init() {
     wii_add_child(display, child);
 
     //
+    // The cartridge settings menu
+    //
+
+    TREENODE* cartridge =
+        wii_create_tree_node(NODETYPE_ADVANCED_CART_SETTINGS, "Cartridge settings");
+    wii_add_child(advanced, cartridge);
+
+    child = wii_create_tree_node(NODETYPE_HIGH_SCORE_MODE, "High score cartridge");
+    wii_add_child(cartridge, child);
+
+    //
     // The controls settings menu
     //
 
     TREENODE* controls =
         wii_create_tree_node(NODETYPE_CONTROLS_SETTINGS, "Control settings");
     wii_add_child(advanced, controls);
-
-    child =
-        wii_create_tree_node(NODETYPE_DIFF_SWITCH_ENABLED, "Diff. switches");
-    wii_add_child(controls, child);
-
-    child = wii_create_tree_node(NODETYPE_DIFF_SWITCH_DISPLAY,
-                                 "Diff. switches display");
-    wii_add_child(controls, child);
-
-    child = wii_create_tree_node(NODETYPE_SPACER, "");
-    wii_add_child(controls, child);
 
     child = wii_create_tree_node(NODETYPE_LIGHTGUN_CROSSHAIR,
                                  "Lightgun crosshair");
@@ -240,18 +240,21 @@ void wii_atari_menu_init() {
     wii_add_child(controls, child);
 
     //
-    // The cartridge settings menu
+    // The diff switch settings
     //
 
-    TREENODE* cartridge =
-        wii_create_tree_node(NODETYPE_ADVANCED_CART_SETTINGS, "Cartridge settings");
-    wii_add_child(advanced, cartridge);
+    TREENODE* diffswitch =
+        wii_create_tree_node(NODETYPE_ADVANCED_DIFF_SWITCH_SETTINGS, "Difficulty switch settings");
+    wii_add_child(advanced, diffswitch);
 
-    child = wii_create_tree_node(NODETYPE_HIGH_SCORE_MODE, "High score cart.");
-    wii_add_child(cartridge, child);
+    child =
+        wii_create_tree_node(NODETYPE_DIFF_SWITCH_ENABLED, "Diff. Switch buttons");
+    wii_add_child(diffswitch, child);
 
-    child = wii_create_tree_node(NODETYPE_SPACER, "");
-    wii_add_child(cartridge, child);
+    child = wii_create_tree_node(NODETYPE_DIFF_SWITCH_DISPLAY,
+                                 "Display switches");
+    wii_add_child(diffswitch, child);
+
 
     child = wii_create_tree_node(NODETYPE_SPACER, "");
     wii_add_child(advanced, child);
@@ -697,6 +700,7 @@ void wii_menu_handle_select_node(TREENODE* node) {
                 }
                 break;
             case NODETYPE_ADVANCED_CART_SETTINGS:
+            case NODETYPE_ADVANCED_DIFF_SWITCH_SETTINGS:
                 wii_menu_push(node);
                 break;
             default:
@@ -754,7 +758,7 @@ BOOL wii_menu_handle_is_node_selectable(TREENODE* node) {
     if (!wii_atari_db_is_node_selectable(node)) {
         return FALSE;
     }
-    
+
     return TRUE;
 }
 
