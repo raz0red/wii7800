@@ -152,16 +152,17 @@ bool sound_Store( ) {
       sample[index] = sound >> 1;
     }
   } 
-#ifdef TRACE_SOUND  
   else {
-    for(uint index = 0; index < length; index++) {
+    for(uint index = 0; index < length; index++) {      
+#ifdef TRACE_SOUND        
       stotalCount++;
       sumTia += sample[index];      
       if (sample[index] > maxTia) maxTia = sample[index];
-      if (sample[index] < minTia) minTia = sample[index];      
+      if (sample[index] < minTia) minTia = sample[index]; 
+#endif        
+      sample[index] = sample[index] * 0.75; //>> 1;
     }
   }
-#endif  
   pokey_Clear(); // WII
 
   wii_storeSound( sample, length );
