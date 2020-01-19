@@ -172,9 +172,11 @@ static void write_entry(FILE* file, const char* hash) {
             fprintf(file, "crossy=%d\n", cartridge_crosshair_y);
         }
     }
+#ifdef ENABLE_BIOS_SUPPORT    
     if (cart_settings.disable_bios) {
         fprintf(file, "disablebios=%s\n", cart_settings.disable_bios ? "true" : "false");
     }    
+#endif    
     /*byte cartridge_left_switch = 1;*/ // Default
     if (cartridge_left_switch != 1) {
         fprintf(file, "leftswitch=%d\n", cartridge_left_switch);
@@ -409,8 +411,10 @@ void wii_atari_db_create_menu(TREENODE* cart_settings_menu) {
     child = wii_create_tree_node(NODETYPE_CART_SETTINGS_XM, "Expansion Module (XM)");
     wii_add_child(cart_settings, child);
 
+#ifdef ENABLE_BIOS_SUPPORT    
     child = wii_create_tree_node(NODETYPE_CART_SETTINGS_DISABLE_BIOS, "BIOS");
     wii_add_child(cart_settings, child);
+#endif    
 
     child = wii_create_tree_node(NODETYPE_CART_SETTINGS_WSYNC, "Handle WSYNC");
     wii_add_child(cart_settings, child);

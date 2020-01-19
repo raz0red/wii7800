@@ -380,6 +380,7 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
     wii_atari_db_after_load();
 
     bios_enabled = false;
+#ifdef ENABLE_BIOS_SUPPORT    
     if (loadbios && !cartridge_disable_bios)  {
         char boot_rom[WII_MAX_PATH];
         snprintf(boot_rom, WII_MAX_PATH, "%s%s", wii_get_fs_prefix(),
@@ -392,6 +393,7 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
             bios_enabled = false;
         }
     }
+#endif    
 
 #ifdef WII_NETTRACE
     net_print_string(NULL, 0, "Final values:\n");  
