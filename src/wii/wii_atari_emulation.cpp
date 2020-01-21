@@ -69,9 +69,6 @@ BOOL wii_start_emulation(char* romfile,
                          const char* savefile,
                          BOOL reset,
                          BOOL resume) {
-    // Disabled the high score cartridge
-    wii_hs_enabled = (wii_hs_mode != HSMODE_DISABLED);
-
     // Write out the current config
     wii_write_config();
 
@@ -83,11 +80,6 @@ BOOL wii_start_emulation(char* romfile,
     if (!reset && !resume) {
         // Whether to load a save file
         loadsave = (savefile != NULL && strlen(savefile) > 0);
-
-        // Disable the high score cart for saves if applicable
-        if (loadsave && (wii_hs_mode != HSMODE_ENABLED_SNAPSHOTS)) {
-            wii_hs_enabled = false;
-        }
 
         // If we are not loading a save, reset snapshot related state
         // information (current index, etc.)
@@ -128,6 +120,8 @@ BOOL wii_start_emulation(char* romfile,
 
                     succeeded = prosystem_Load(savefile);
                     if (succeeded) {
+                        // Load high score cart after loading saved state
+                        cartridge_LoadHighScoreCart();
                         wii_atari_pause(false);
                     } else {
                         wii_set_status_message(

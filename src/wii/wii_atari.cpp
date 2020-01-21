@@ -89,10 +89,6 @@ byte atari_pal8[256] = {0};
 BOOL wii_lightgun_flash = TRUE;
 /** Whether to display a crosshair for the lightgun */
 BOOL wii_lightgun_crosshair = TRUE;
-/** Whether high score cart is enabled */
-BOOL wii_hs_enabled = TRUE;
-/** What mode the high score cart is in */
-BOOL wii_hs_mode = HSMODE_ENABLED_NORMAL;
 /** If the difficulty switches are enabled */
 BOOL wii_diff_switch_enabled = FALSE;
 /** When to display the difficulty switches */
@@ -405,6 +401,7 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
     net_print_string(NULL, 0, "  controller2: %d\n", cartridge_controller[1]);
     net_print_string(NULL, 0, "  cartridge_type: %d\n", cartridge_type);
     net_print_string(NULL, 0, "  bios disabled: %s\n", cartridge_disable_bios ? "1" : "0");
+    net_print_string(NULL, 0, "  hsc enabled: %s\n", cartridge_hsc_enabled ? "1" : "0");    
 #endif
 
     wii_reset_keyboard_data();

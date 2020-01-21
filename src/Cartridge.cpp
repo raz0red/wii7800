@@ -58,6 +58,7 @@ uint cartridge_hblank = 34;
 byte cartridge_left_switch = 1;
 byte cartridge_right_switch = 0;
 bool cartridge_swap_buttons = false;
+bool cartridge_hsc_enabled = false;
 
 // Whether the cartridge has accessed the high score ROM (indicates that the
 // SRAM should be persisted when the cartridge is unloaded)
@@ -97,16 +98,23 @@ static bool cartridge_CC2(const byte* header) {
 }
 
 // ----------------------------------------------------------------------------
-// GetBankOffset
+// GetBank
 // ----------------------------------------------------------------------------
-static uint cartridge_GetBankOffset(byte bank) {
+static uint cartridge_GetBank(byte bank) {
   if ((cartridge_type == CARTRIDGE_TYPE_SUPERCART || cartridge_type == CARTRIDGE_TYPE_SUPERCART_ROM || cartridge_type == CARTRIDGE_TYPE_SUPERCART_RAM) && cartridge_size <= 65536) {
     // for some of these carts, there are only 4 banks. in this case we ignore bit 3
     // previously, games of this type had to be doubled. The first 4 banks needed to be duplicated at the end of the ROM
-      return (bank & 3) * 16384;
+      return (bank & 3);
   }
 
-  return bank * 16384;
+  return bank;
+}
+
+// ----------------------------------------------------------------------------
+// GetBankOffset
+// ----------------------------------------------------------------------------
+static uint cartridge_GetBankOffset(byte bank) {
+  return cartridge_GetBank(bank) * 16384;
 }
 
 // ----------------------------------------------------------------------------
@@ -114,7 +122,8 @@ static uint cartridge_GetBankOffset(byte bank) {
 // ----------------------------------------------------------------------------
 static void cartridge_WriteBank(word address, byte bank) {
 #ifdef TRACE_BANK_SWITCH              
-  net_print_string(NULL, 0, "Bank switch: %d, %d\n", address, bank);    
+  net_print_string(NULL, 0, "Bank switch: %d, %d, max:%d\n", 
+    address, cartridge_GetBank(bank), cartridge_size / 16384);    
 #endif  
   uint offset = cartridge_GetBankOffset(bank);
   if(offset < cartridge_size) {
@@ -212,6 +221,7 @@ static void cartridge_ReadHeader(const byte* header) {
   cartridge_region = header[57];
   cartridge_flags = 0;
   cartridge_xm = (header[63] & 1)? true: false;
+  cartridge_hsc_enabled = header[58]&0x01;
 
   // Wii: Updates to header interpretation
   byte ct1 = header[54];
@@ -239,6 +249,12 @@ static void cartridge_ReadHeader(const byte* header) {
       cartridge_type = CARTRIDGE_TYPE_SUPERCART;
 #ifdef WII_NETTRACE            
       net_print_string(NULL, 0, "Update: (0x01) bit1: %d, %d\n", old_type, cartridge_type);  
+#endif      
+    } else if (cartridge_size <= 0x10000 && ((ct1&0x04)==0x04)) { // Size < 64k && BIT2 (Normal RAM: ?) ram at $4000 ) 
+      int old_type = cartridge_type;
+      cartridge_type = CARTRIDGE_TYPE_NORMAL_RAM;
+#ifdef WII_NETTRACE            
+      net_print_string(NULL, 0, "Update: (0x04) bit2: %d, %d\n", old_type, cartridge_type);  
 #endif      
     } else {
       // Attempt to determine the cartridge type based on its size
@@ -276,9 +292,9 @@ static void cartridge_ReadHeader(const byte* header) {
   net_print_string(NULL, 0, "  pokey: %s\n", (cartridge_pokey ? "1" : "0"));
   net_print_string(NULL, 0, "  pokey450: %s\n", (cartridge_pokey450 ? "1" : "0"));
   net_print_string(NULL, 0, "  tv type: %s\n", cartridge_region ? "PAL" : "NTSC");
-  net_print_string(NULL, 0, "  Save device: %s\n", 
-    ((header[48]&0x01) ? "SaveKey/AtariVox" : 
-      ((header[48]&0x02) ? "HSC" : "None")));
+  net_print_string(NULL, 0, "  Save device: [%x]%s%s\n", header[58],
+    ((header[58]&0x02) ? " SaveKey/AtariVox": ""),
+    ((header[58]&0x01) ? " HSC": ""));
   net_print_string(NULL, 0, "  controller1: %d\n", cartridge_controller[0]);
   net_print_string(NULL, 0, "  controller2: %d\n", cartridge_controller[1]);
   net_print_string(NULL, 0, "  cartridge_type 53: %d\n", header[53]);
@@ -296,6 +312,10 @@ static bool cartridge_Load(const byte* data, uint size) {
     logger_LogError("Cartridge data is invalid.", CARTRIDGE_SOURCE);
     return false;
   }
+
+#ifdef WII_NETTRACE
+  net_print_string(NULL, 0, "actual cartridge_size: %d\n", size);        
+#endif  
 
   cartridge_Release( );
   
@@ -510,7 +530,7 @@ static bool cartridge_LoadHighScoreSram()
  */
 bool cartridge_LoadHighScoreCart() {
 
-    if( !wii_hs_enabled || cartridge_region != REGION_NTSC ) 
+    if( !cartridge_hsc_enabled || cartridge_region != REGION_NTSC ) 
     {
         // Only load the cart if it is enabled and the region is NTSC
         return false;
@@ -560,32 +580,35 @@ void cartridge_Store( ) {
     case CARTRIDGE_TYPE_NORMAL:
       memory_WriteROM(65536 - cartridge_size, cartridge_size, cartridge_buffer);
       break;
+    case CARTRIDGE_TYPE_NORMAL_RAM:
+      memory_WriteROM(65536 - cartridge_size, cartridge_size, cartridge_buffer);
+      memory_ClearROM(16384, 16384);      
+      break;
     case CARTRIDGE_TYPE_SUPERCART: {
       uint offset = cartridge_size - 16384;
       if(offset < cartridge_size) {
-        memory_WriteROM(49152, 16384, cartridge_buffer + offset /*cartridge_GetBankOffset(7)*/);
+        memory_WriteROM(49152, 16384, cartridge_buffer + offset);
       }
     } break;
     case CARTRIDGE_TYPE_SUPERCART_LARGE: {
       uint offset = cartridge_size - 16384;
       if(offset < cartridge_size) {
-        memory_WriteROM(49152, 16384, cartridge_buffer + offset /*cartridge_GetBankOffset(8)*/);
+        memory_WriteROM(49152, 16384, cartridge_buffer + offset);
         memory_WriteROM(16384, 16384, cartridge_buffer + cartridge_GetBankOffset(0));
       }
     } break;
     case CARTRIDGE_TYPE_SUPERCART_RAM: {
       uint offset = cartridge_size - 16384;
       if(offset < cartridge_size) {
-        memory_WriteROM(49152, 16384, cartridge_buffer + offset /*cartridge_GetBankOffset(7)*/);
+        memory_WriteROM(49152, 16384, cartridge_buffer + offset);
         memory_ClearROM(16384, 16384);
       }
     } break;
     case CARTRIDGE_TYPE_SUPERCART_ROM: {
       uint offset = cartridge_size - 16384;
-      uint offset2 = offset - 16384;
-      if(offset < cartridge_size && offset2 < cartridge_size) {
-        memory_WriteROM(49152, 16384, cartridge_buffer + offset /*cartridge_GetBankOffset(7)*/);
-        memory_WriteROM(16384, 16384, cartridge_buffer + offset2 /*cartridge_GetBankOffset(6)*/);
+      if(offset < cartridge_size && cartridge_GetBankOffset(6) < cartridge_size) {
+        memory_WriteROM(49152, 16384, cartridge_buffer + offset);        
+        memory_WriteROM(16384, 16384, cartridge_buffer + cartridge_GetBankOffset(6));
       }
     } break;
     case CARTRIDGE_TYPE_ABSOLUTE:
@@ -616,13 +639,13 @@ void cartridge_Write(word address, byte data) {
     case CARTRIDGE_TYPE_SUPERCART_RAM:
     case CARTRIDGE_TYPE_SUPERCART_ROM: {
       uint maxbank = cartridge_size / 16384;
-      if(address >= 32768 && address < 49152 && data < maxbank /*9*/) {
+      if(address >= 32768 && address < 49152 && cartridge_GetBank(data) < maxbank /*9*/) {
         cartridge_StoreBank(data);
       }
     } break;
     case CARTRIDGE_TYPE_SUPERCART_LARGE: {
       uint maxbank = cartridge_size / 16384;
-      if(address >= 32768 && address < 49152 && data < maxbank /*9*/) {
+      if(address >= 32768 && address < 49152 && cartridge_GetBank(data) < maxbank /*9*/) {
         cartridge_StoreBank(data + 1);
       }
     } break;
@@ -744,5 +767,6 @@ void cartridge_Release( ) {
     cartridge_left_switch = 1;
     cartridge_right_switch = 0;
     cartridge_swap_buttons = false;
+    cartridge_hsc_enabled = false;
   }
 }

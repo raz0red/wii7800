@@ -93,10 +93,6 @@ extern bool wii_testframe;
 extern BOOL wii_lightgun_flash;
 /** Whether to display a crosshair for the lightgun */
 extern BOOL wii_lightgun_crosshair;
-/** Whether high score cart is enabled */
-extern BOOL wii_hs_enabled;
-/** What mode the high score cart is in */
-extern BOOL wii_hs_mode;
 /** Whether the difficulty switches are enabled */
 extern BOOL wii_diff_switch_enabled;
 /** When to display the difficulty switches */

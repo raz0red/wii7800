@@ -214,17 +214,6 @@ void wii_atari_menu_init() {
     wii_add_child(display, child);
 
     //
-    // The cartridge settings menu
-    //
-
-    TREENODE* cartridge =
-        wii_create_tree_node(NODETYPE_ADVANCED_CART_SETTINGS, "Cartridge settings");
-    wii_add_child(advanced, cartridge);
-
-    child = wii_create_tree_node(NODETYPE_HIGH_SCORE_MODE, "High score cartridge");
-    wii_add_child(cartridge, child);
-
-    //
     // The controls settings menu
     //
 
@@ -428,22 +417,6 @@ void wii_menu_handle_get_node_name(TREENODE* node, char* buffer, char* value) {
             }
             snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
             break;
-        case NODETYPE_HIGH_SCORE_MODE:
-            switch (wii_hs_mode) {
-                case HSMODE_ENABLED_NORMAL:
-                    strmode = "Enabled (excludes saved state)";
-                    break;
-                case HSMODE_ENABLED_SNAPSHOTS:
-                    strmode = "Enabled (includes saved state)";
-                    break;
-                case HSMODE_DISABLED:
-                    strmode = "Disabled";
-                    break;
-                default:
-                    break;
-            }
-            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
-            break;
         case NODETYPE_MAX_FRAME_RATE:
             if (wii_max_frame_rate == 0) {
                 snprintf(value, WII_MENU_BUFF_SIZE, "(auto)");
@@ -621,12 +594,6 @@ void wii_menu_handle_select_node(TREENODE* node) {
                     wii_diff_switch_display = 0;
                 }
                 break;
-            case NODETYPE_HIGH_SCORE_MODE:
-                wii_hs_mode++;
-                if (wii_hs_mode > 2) {
-                    wii_hs_mode = 0;
-                }
-                break;
             case NODETYPE_VSYNC:
                 wii_set_vsync(wii_vsync ^ 1);
                 break;
@@ -699,7 +666,6 @@ void wii_menu_handle_select_node(TREENODE* node) {
                     }
                 }
                 break;
-            case NODETYPE_ADVANCED_CART_SETTINGS:
             case NODETYPE_ADVANCED_DIFF_SWITCH_SETTINGS:
                 wii_menu_push(node);
                 break;

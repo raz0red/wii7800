@@ -42,6 +42,11 @@
 #include "wii_main.h"
 #include "wii_atari_db.h"
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #define DB_FILE_PATH WII_PROSYSTEM_DB
 #define DB_TMP_FILE_PATH WII_FILES_DIR "ProSystem.dat.tmp"
 #define DB_OLD_FILE_PATH WII_FILES_DIR "ProSystem.dat.old"
@@ -69,6 +74,8 @@ typedef struct CartSettings {
     bool disable_bios;
     /** The hblank */
     int hblank;
+    /** High score cartridge */
+    bool hsc_enabled;
 } CartSettings;
 
 extern unsigned char keyboard_data[19];
@@ -99,6 +106,7 @@ void wii_atari_db_after_load()
     cart_settings.xm = cartridge_xm;
     cart_settings.disable_bios = cartridge_disable_bios;
     cart_settings.hblank = cartridge_hblank;
+    cart_settings.hsc_enabled = cartridge_hsc_enabled;
     cart_exists_in_db = false;
 }
 
@@ -148,6 +156,9 @@ static char* get_db_old_path() {
  * @param   hash The hash for the entry
  */
 static void write_entry(FILE* file, const char* hash) {
+#ifdef WII_NETTRACE
+    net_print_string(NULL, 0, "writing db entry with hash: [%s]\n", hash);
+#endif
     bool lightgun =
         cartridge_controller[0] == CARTRIDGE_CONTROLLER_LIGHTGUN ||
         cartridge_controller[1] == CARTRIDGE_CONTROLLER_LIGHTGUN;
@@ -193,6 +204,9 @@ static void write_entry(FILE* file, const char* hash) {
     }
     if (cart_settings.hblank != HBLANK_DEFAULT) {
         fprintf(file, "hblank=%d\n", cart_settings.hblank);
+    }
+    if (cart_settings.hsc_enabled) {
+        fprintf(file, "hsc=%s\n", cart_settings.hsc_enabled ? "true" : "false");
     }
 }
 
@@ -408,7 +422,10 @@ void wii_atari_db_create_menu(TREENODE* cart_settings_menu) {
     child = wii_create_tree_node(NODETYPE_CART_SETTINGS_POKEY, "Pokey");
     wii_add_child(cart_settings, child);
 
-    child = wii_create_tree_node(NODETYPE_CART_SETTINGS_XM, "Expansion Module (XM)");
+    child = wii_create_tree_node(NODETYPE_CART_SETTINGS_HSC, "High score cartridge (HSC)");
+    wii_add_child(cart_settings, child);    
+
+    child = wii_create_tree_node(NODETYPE_CART_SETTINGS_XM, "Expansion module (XM)");
     wii_add_child(cart_settings, child);
 
 #ifdef ENABLE_BIOS_SUPPORT    
@@ -526,6 +543,9 @@ void wii_atari_db_get_node_name(TREENODE* node, char* buffer, char* value) {
                 case CARTRIDGE_TYPE_ACTIVISION:
                     strmode = "Activision";
                     break;
+                case CARTRIDGE_TYPE_NORMAL_RAM:
+                    strmode="Normal RAM at $4000";
+                    break;
                 default:
                     break;
             }
@@ -567,6 +587,10 @@ void wii_atari_db_get_node_name(TREENODE* node, char* buffer, char* value) {
         case NODETYPE_CART_SETTINGS_DISABLE_BIOS:
             snprintf(value, WII_MENU_BUFF_SIZE, "%s", 
                 cart_settings.disable_bios ? "Disabled" : "Enabled");
+            break;
+        case NODETYPE_CART_SETTINGS_HSC:
+            snprintf(value, WII_MENU_BUFF_SIZE, "%s", 
+                cart_settings.hsc_enabled ? "Enabled" : "Disabled");
             break;
         case NODETYPE_CART_SETTINGS_LEFT_SWITCH:
             snprintf(value, WII_MENU_BUFF_SIZE, "%s", 
@@ -625,7 +649,7 @@ void wii_atari_db_select_node(TREENODE* node) {
             break;
         case NODETYPE_CART_SETTINGS_CART_TYPE:
             cart_settings.type++;
-            if (cart_settings.type > CARTRIDGE_TYPE_ACTIVISION) {
+            if (cart_settings.type > CARTRIDGE_TYPE_NORMAL_RAM) {
                 cart_settings.type = 0;
             }
             wii_set_status_message(
@@ -683,6 +707,11 @@ void wii_atari_db_select_node(TREENODE* node) {
             break;
         case NODETYPE_CART_SETTINGS_SWAP_BUTTONS:
             cartridge_swap_buttons ^= 1;
+            break;            
+        case NODETYPE_CART_SETTINGS_HSC:            
+            cart_settings.hsc_enabled ^= 1;
+            wii_set_status_message(
+                "High score cart changes not applied until cartridge is reloaded");
             break;            
         case NODETYPE_CART_SETTINGS_CONTROLLER1:
         case NODETYPE_CART_SETTINGS_CONTROLLER2: {

@@ -31,6 +31,11 @@
 #include "wii_app_common.h"
 #endif
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #define DATABASE_SOURCE "Database.cpp"
 
 bool cart_in_db = false;
@@ -52,6 +57,12 @@ char database_loc[WII_MAX_PATH] = "";
 bool database_Load(std::string digest) {    
   cart_in_db = false;
   if(database_enabled) {
+
+#ifdef WII_NETTRACE
+      net_print_string(NULL, 0, "attempting to find db entry with hash: [%s]\n", 
+        digest.c_str());
+#endif
+
 #ifndef WII
       FILE* file = fopen(database_filename.c_str(), "r");
 #else
@@ -139,6 +150,10 @@ bool database_Load(std::string digest) {
                   }
                   if (entry[index].find("swapbuttons") != std::string::npos) {
                       cartridge_swap_buttons =
+                          common_ParseBool(database_GetValue(entry[index]));
+                  }
+                  if (entry[index].find("hsc") != std::string::npos) {
+                      cartridge_hsc_enabled =
                           common_ParseBool(database_GetValue(entry[index]));
                   }
               }
