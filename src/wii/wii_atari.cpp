@@ -75,7 +75,8 @@
 
 /** The default screen sizes */
 static const screen_size default_screen_sizes[] = {
-    {DEFAULT_SCREEN_X, DEFAULT_SCREEN_Y, "Atari 7800 PAR (6:7)"},
+    {DEFAULT_SCREEN_X, DEFAULT_SCREEN_Y, "0.857 PAR (6:7)"},
+    {616, DEFAULT_SCREEN_Y, "0.9625 PAR"},
     {640, DEFAULT_SCREEN_Y, "Square Pixels (1:1)"}
 };
 
@@ -130,6 +131,8 @@ static int diff_wait_count = 0;
 static int diff_display_count = 0;
 /** The current roms directory */
 static char roms_dir[WII_MAX_PATH] = "";
+/** The current cartridge title */
+char rom_title[WII_MAX_PATH] = "";
 /** The saves directory */
 static char saves_dir[WII_MAX_PATH] = "";
 
@@ -372,6 +375,11 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
 
     database_Load(cartridge_digest);
 
+    // If no title, use the one used during loading the rom
+    if (cartridge_title.length() == 0) {
+        cartridge_title = rom_title;
+    }
+
     // Provide opportunity to capture settings
     wii_atari_db_after_load();
 
@@ -492,10 +500,9 @@ static void wii_atari_display_diff_switches() {
 /**
  * Refreshes the Wii display
  *
- * @param   sync Whether vsync is available for the current frame
  * @param   testframes The number of testframes to run (for loading saves)
  */
-static void wii_atari_refresh_screen(bool sync, int testframes) {
+static void wii_atari_refresh_screen(int testframes) {
     if (diff_wait_count > 0) {
         // Reduces the number of frames remaining to display the difficulty
         // switches.
@@ -513,15 +520,6 @@ static void wii_atari_refresh_screen(bool sync, int testframes) {
     if (drawcrosshair) {
         // Erase the crosshairs
         wii_atari_display_crosshairs(wii_ir_x, wii_ir_y, TRUE);
-    }
-
-    if (sync) {
-#if 0        
-        wii_sync_video();
-#else
-        // TODO: Evaluate how to evaluate this 
-        VIDEO_WaitVSync();
-#endif
     }
 
     if (testframes < 0) {
@@ -974,6 +972,11 @@ void wii_atari_main_loop(int testframes) {
         wii_set_video_mode(TRUE);              
         wii_gx_push_callback(&wii_render_callback, TRUE, NULL);                                    
     }                                                        
+    
+    // Sync up timing prior to launching
+    VIDEO_WaitVSync();
+    VIDEO_WaitVSync();
+    timer_Reset();
 
     while (!prosystem_paused) {
         if (testframes < 0) {
@@ -986,13 +989,23 @@ void wii_atari_main_loop(int testframes) {
         if (prosystem_active && !prosystem_paused) {
             prosystem_ExecuteFrame(keyboard_data);
 
+            if (wii_vsync) {
+#if 0        
+                wii_sync_video();
+#else
+                // TODO: Evaluate how to evaluate this 
+                VIDEO_WaitVSync();
+#endif
+            }
+
             while (!timer_IsTime())
                 ;
 
             fps_counter =
                 (((float)timerCount++ / (SDL_GetTicks() - start_time)) *
                  1000.0);
-            wii_atari_refresh_screen(wii_vsync, testframes);
+
+            wii_atari_refresh_screen(testframes);
 
             if (testframes < 0) {
                 sound_Store();

@@ -46,7 +46,7 @@ byte cartridge_type;
 byte cartridge_region;
 bool cartridge_pokey;
 bool cartridge_pokey450;
-byte cartridge_controller[2];
+byte cartridge_controller[2] = {1, 1};
 byte cartridge_bank;
 uint cartridge_flags;
 int cartridge_crosshair_x;
@@ -166,10 +166,9 @@ static void cartridge_SetTypeBySize(uint size) {
 // ----------------------------------------------------------------------------
 static void cartridge_ReadHeader(const byte* header) {
 
-  if( wii_debug )
-  {
-      fprintf( stderr, "reading cartridge header:\n" );
-  }
+#ifdef WII_NETTRACE            
+    net_print_string(NULL, 0, "Reading cartridge header\n");  
+#endif      
 
   char temp[33] = {0};
   for(int index = 0; index < 32; index++) {
@@ -335,6 +334,14 @@ static bool cartridge_Load(const byte* data, uint size) {
     cartridge_ReadHeader(header);
     size -= 128;
     offset = 128;
+
+    if (cartridge_size != size) {
+#ifdef WII_NETTRACE
+      net_print_string(NULL, 0, "!!! CARTRIDGE SIZE IN HEADER DOES NOT MATCH !!! : %d %d\n",
+        cartridge_size, size);        
+#endif  
+      cartridge_size = size;        
+    }
   }
   else {
     cartridge_size = size;
@@ -744,7 +751,7 @@ void cartridge_Release( ) {
     cartridge_buffer = NULL;
 
     //
-    // WII
+    // Wii
     //
     // These values need to be reset so that moving between carts works
     // consistently. This seems to be a ProSystem emulator bug.
@@ -755,7 +762,8 @@ void cartridge_Release( ) {
     cartridge_pokey = 0;
     cartridge_pokey450 = 0;
     cartridge_xm = false;
-    memset( cartridge_controller, 0, sizeof( cartridge_controller ) );
+    // Default to joysticks
+    memset( cartridge_controller, 1, sizeof( cartridge_controller ) );
     cartridge_bank = 0;
     cartridge_flags = 0;
     cartridge_disable_bios = false;

@@ -35,6 +35,7 @@
 #define WII_ATARI_H
 
 #include <gctypes.h>
+#include "wii_main.h"
 #include "wii_resize_screen.h"
 
 // Dimensions of the surface that is being written to
@@ -109,6 +110,8 @@ extern int wii_screen_y;
 extern BOOL wii_filter;
 /** Whether to use the GX/VI scaler */
 extern BOOL wii_gx_vi_scaler;
+/** The current cartridge title */
+extern char rom_title[WII_MAX_PATH];
 
 /**
  * Returns the current roms directory

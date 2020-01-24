@@ -493,7 +493,8 @@ void wii_menu_handle_select_node(TREENODE* node) {
                 snprintf(buff, sizeof(buff), "%s%s",
                          wii_get_roms_dir(), node->name);
                 // Default the cartridge title
-                cartridge_title = node->name;
+                rom_title[0] = '\0';
+                snprintf(rom_title, WII_MAX_PATH, "%s", node->name);
                 last_rom_index = wii_menu_get_current_index();
                 loading_game = TRUE;
                 wii_start_emulation(buff);

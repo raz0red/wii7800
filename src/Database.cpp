@@ -90,6 +90,10 @@ bool database_Load(std::string digest) {
               for (int index = 0; index < count; index++) {
                   buffer[0] = '\0';
                   fgets(buffer, 256, file);
+                  if (strchr(buffer, '[')) {
+                      // Passed the current game in DB
+                      break;
+                  }
                   entry[index] = common_Remove(buffer, '\r');
                   entry[index] = common_Remove(entry[index], '\n');
               }
