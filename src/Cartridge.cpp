@@ -335,12 +335,28 @@ static bool cartridge_Load(const byte* data, uint size) {
     size -= 128;
     offset = 128;
 
+    // Several cartridge headers do not have the proper size. So attempt to use the size
+    // of the file. 
     if (cartridge_size != size) {
 #ifdef WII_NETTRACE
       net_print_string(NULL, 0, "!!! CARTRIDGE SIZE IN HEADER DOES NOT MATCH !!! : %d %d\n",
         cartridge_size, size);        
-#endif  
-      cartridge_size = size;        
+#endif
+      // Necessary for the following roms:
+      // Impossible Mission hacks w/ C64 style graphics
+      if (size%1024 == 0) {        
+#ifdef WII_NETTRACE
+      net_print_string(NULL, 0, "!!! ROM size is 1k multiple, using ROM size !!! : %d\n",
+        size);        
+#endif
+        cartridge_size = size;        
+      } else {
+#ifdef WII_NETTRACE
+      net_print_string(NULL, 0, "!!! ROM size is not 1k multiple, using header size !!! : %d\n",
+        cartridge_size);        
+#endif
+
+      }
     }
   }
   else {

@@ -173,12 +173,9 @@ static void write_entry(FILE* file, const char* hash) {
     fprintf(file, "controller2=%d\n", cartridge_controller[1]);
     fprintf(file, "region=%d\n", cart_settings.region);
     fprintf(file, "flags=%d\n", cart_settings.flags);
-    if (cart_settings.pokey450) {
-        fprintf(file, "pokey450=%s\n", cart_settings.pokey450 ? "true" : "false");
-    }
-    if (cart_settings.xm) {
-        fprintf(file, "xm=%s\n", cart_settings.xm ? "true" : "false");
-    }
+    fprintf(file, "pokey450=%s\n", cart_settings.pokey450 ? "true" : "false");
+    fprintf(file, "xm=%s\n", cart_settings.xm ? "true" : "false");
+    fprintf(file, "hsc=%s\n", cart_settings.hsc_enabled ? "true" : "false");    
     if (lightgun) {
         if (cartridge_crosshair_x) {
             fprintf(file, "crossx=%d\n", cartridge_crosshair_x);
@@ -208,10 +205,7 @@ static void write_entry(FILE* file, const char* hash) {
     }
     if (cart_settings.hblank != HBLANK_DEFAULT) {
         fprintf(file, "hblank=%d\n", cart_settings.hblank);
-    }
-    if (cart_settings.hsc_enabled) {
-        fprintf(file, "hsc=%s\n", cart_settings.hsc_enabled ? "true" : "false");
-    }
+    }       
 }
 
 /**
