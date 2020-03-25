@@ -14,7 +14,7 @@ implementation.
 
 _Wii7800 0.5 + Atari 7800 Homebrew Video_
 
-<a href='http://www.youtube.com/watch?feature=player_embedded&v=Qq7qgz8fVgs' target='_blank'><img src='http://img.youtube.com/vi/Qq7qgz8fVgs/0.jpg' width='425' height=344 /></a>
+<a href='http://www.youtube.com/watch?feature=player_embedded&v=3Yxuj9o3S1g' target='_blank'><img src='http://img.youtube.com/vi/3Yxuj9o3S1g/0.jpg' width='425' height=344 /></a>
 
 ## Current status
 
