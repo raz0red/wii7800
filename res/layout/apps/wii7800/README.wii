@@ -1,5 +1,5 @@
 --------------------------------------------
-Wii7800 v0.5-SNAPSHOT release README
+Wii7800 v0.5 release README
 --------------------------------------------
 
 Ported by raz0red [github.com/raz0red]
@@ -218,7 +218,7 @@ Team Twiizers    : For enabling homebrew
 Change log
 --------------------------------------------
 
-01/28/20 (0.5)
+03/24/20 (0.5)
 ---------------------
   - Partial Expansion Module (XM) support
     - XRAM

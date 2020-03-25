@@ -197,7 +197,7 @@ the following locations:
 
 ## Change log
 
-### 01/28/20 (0.5)
+### 03/24/20 (0.5)
     - Partial Expansion Module (XM) support
       - XRAM
       - XPokey (limited to single Pokey)
