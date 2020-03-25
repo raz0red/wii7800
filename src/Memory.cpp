@@ -25,6 +25,12 @@
 
 #include "wii_main.h"
 #include "Memory.h"
+#include "ExpansionModule.h"
+
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
 
 byte memory_ram[MEMORY_SIZE] = {0};
 byte memory_rom[MEMORY_SIZE] = {0};
@@ -51,11 +57,24 @@ void memory_Reset( ) {
 // Read
 // ----------------------------------------------------------------------------
 byte memory_Read(word address) {
+#if 0  
+  net_print_string(NULL, 0, "Memory read: %d\n", address);    
+#endif  
   byte tmp_byte;
 
-  if( cartridge_pokey && address == POKEY_RANDOM )
-  {
-      return pokey_GetRegister( POKEY_RANDOM );
+  if (cartridge_xm) {
+    if ((address >= 0x0470 && address < 0x0480) ||
+        (xm_pokey_enabled && (address >= 0x0450 && address < 0x0470)) ||
+        (xm_mem_enabled && (address >= 0x4000 && address < 0x8000))) {
+      return xm_Read(address);
+    } 
+  } 
+    
+  if (cartridge_pokey && (
+      (!cartridge_pokey450 && (address >= 0x4000 && address <= 0x400f)) ||
+      (cartridge_pokey450 && (address >= 0x0450 && address < 0x0470)))) {
+    return pokey_GetRegister(
+      cartridge_pokey450 ? 0x4000 + (address - 0x0450) : address);
   }
 
   switch ( address ) {
@@ -80,6 +99,25 @@ byte memory_Read(word address) {
 // Write
 // ----------------------------------------------------------------------------
 void memory_Write(word address, byte data) {
+#if 0  
+  net_print_string(NULL, 0, "Memory write: %d, %d\n", address, data);  
+#endif  
+
+  if (cartridge_xm &&
+      ((address >= 0x0470 && address < 0x0480) ||
+      ((xm_pokey_enabled && (address >= 0x0450 && address < 0x0470)) ||
+      (xm_mem_enabled && (address >= 0x4000 && address < 0x8000))))) {
+    xm_Write(address, data);
+    return;
+  }
+
+  if (cartridge_pokey && (
+      (!cartridge_pokey450 && (address >= 0x4000 && address <= 0x400f)) ||
+      (cartridge_pokey450 && (address >= 0x0450 && address < 0x0470)))) {
+    pokey_SetRegister(
+      (cartridge_pokey450 ? 0x4000 + (address - 0x0450) : address), data);
+    return;
+  }
 
   if(!memory_rom[address]) {
 
@@ -139,11 +177,11 @@ if( address >= 0x1000 && address <= 0x17FF )
       case SWCHB:	
           	/*gdement:  Writing here actually writes to DRB inside the RIOT chip.
 					This value only indirectly affects output of SWCHB.*/
-		riot_SetDRB(data);
-		break;
+		    riot_SetDRB(data);
+		    break;
 
       case SWCHA:	
-		riot_SetDRA(data);
+		  riot_SetDRA(data);
         break;     
       case TIM1T:
       case TIM1T | 0x8:
@@ -186,7 +224,7 @@ if( address >= 0x1000 && address <= 0x17FF )
 // ----------------------------------------------------------------------------
 // WriteROM
 // ----------------------------------------------------------------------------
-void memory_WriteROM(word address, word size, const byte* data) {
+void memory_WriteROM(word address, uint size, const byte* data) {
   if((address + size) <= MEMORY_SIZE && data != NULL) {
     for(uint index = 0; index < size; index++) {
       memory_ram[address + index] = data[index];
@@ -198,7 +236,7 @@ void memory_WriteROM(word address, word size, const byte* data) {
 // ----------------------------------------------------------------------------
 // ClearROM
 // ----------------------------------------------------------------------------
-void memory_ClearROM(word address, word size) {
+void memory_ClearROM(word address, uint size) {
   if((address + size) <= MEMORY_SIZE) {
     for(uint index = 0; index < size; index++) {
       memory_ram[address + index] = 0;

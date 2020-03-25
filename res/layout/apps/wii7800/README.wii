@@ -1,5 +1,5 @@
 --------------------------------------------
-Wii7800 v0.5-SNAPSHOT release README
+Wii7800 v0.5 release README
 --------------------------------------------
 
 Ported by raz0red [github.com/raz0red]
@@ -37,14 +37,6 @@ Installation
 To install Wii7800, simply extract the zip file directly to your SD card 
 or USB device (retain the hierarchical structure exactly).
 
-Cartridge images must be placed in the roms directory (/wii7800/roms).
-(Zip files are supported)
-
-Wii7800 does support loading of the Atari 7800 BIOS, although it isn't 
-necessary. If you wish to use the BIOS, simply place the NTSC and PAL BIOS
-files in the (/wii7800) directory. The NTSC file must be named, "7800.rom",
-while the PAL file must be named, "7800pal.rom". 
-
 --------------------------------------------
 Lightgun Accuracy, etc.
 --------------------------------------------
@@ -52,6 +44,32 @@ Lightgun Accuracy, etc.
 The crosshair for the Wii7800 emulator is not perfect. For example, you 
 may be pointing at something and your shot may register slightly to the 
 right or left.
+
+--------------------------------------------
+Cartridge Database 
+--------------------------------------------
+
+Wii7800 ships with a database that contains recommended settings for the 
+majority of commercial and a limited number of homebrew cartridges. These
+settings cover control settings, difficulty switch settings, and 
+cartridge-related settings (cartridge type, Pokey support, XM support, 
+high score cart support, etc.).
+
+To view/edit the settings applied for a particular cartridge perform the
+following steps:
+
+  * Load the cartridge (via the "Load cartridge" menu item)
+  * Return to the Wii7800 menu
+  * Select the "Cartridge-specific settings" menu item
+  * View/edit the settings for the cartridge 
+
+Some settings will not be applied until the settings are saved and the 
+cartridge is reloaded. When one of these settings is modified, a message
+will be displayed indicating that this particular setting requires the 
+cartridge to be reloaded (and the settings saved prior to loading).
+
+Other settings, such as difficulty switch and control settings may not
+be applied until the cartridge is reset (or reloaded). 
 
 --------------------------------------------
 Cartridge/ROM Compatibility 
@@ -180,8 +198,8 @@ Wii7800 crashes, code dumps, etc.
 If you are having issues with Wii7800, please let me know about it via one of 
 the following locations:
 
+[https://github.com/raz0red/wii7800/issues]
 [http://www.wiibrew.org/wiki/Talk:Wii7800]
-[http://www.twitchasylum.com/forum/viewtopic.php?t=519]
 
 --------------------------------------------
 Special thanks
@@ -200,11 +218,30 @@ Team Twiizers    : For enabling homebrew
 Change log
 --------------------------------------------
 
-TBD (0.5)
+03/24/20 (0.5)
 ---------------------
+  - Partial Expansion Module (XM) support
+    - XRAM
+    - XPokey (limited to single Pokey)
+  - Added support for cartridges with sizes greater than 144k
+  - Additional bank switching modes and cartridge types
+  - Multiple bank switching fixes
+  - Reworked cartridge header detection
+    - Now properly detects bank switching, RAM, etc.
+    - Detects Expansion Module (XM)
+    - Detects High score cartridge
+    - Detects Pokey at $0450
   - Cartridge database 
-    - Fixed incorrect controller settings for Sirius
-    - Added several homebrew titles (Arkanoid, etc.)
+    - Added ability to edit cartridge database settings via menu
+    - Added several new cartridge properties
+      - Pokey at $0450
+      - Default difficulty switch settings
+      - Expansion Module (XM) enabled/disabled
+      - High score cartridge enabled/disabled
+    - Database content
+      - Fixed incorrect controller settings for Sirius, Crossbow, 
+          and Alien Brigade
+      - Added many homebrew cartridges
   - Display enhancements
     - Double strike (240p)
     - GX+VI mode
@@ -212,11 +249,17 @@ TBD (0.5)
     - Full widescreen support      
     - Ability to enable/disable bilinear filter (GX mode)
     - Color trap filter
+    - Multiple default screen sizes
   - Hierarchical file navigation support
   - USB Support
   - SMB (Network support) for loading ROMs  
   - Multi-save slot support
+  - Reworked menu system (cartridge-specific settings, etc.)
   - Support for launching via WiiFlow (and returning)
+  - Fixed VSYNC issue which caused initial stutter on PAL games
+  - Fixed issue occurring when Kangaroo and Holey were enabled (caused 
+      background to be displayed, resulting in large black squares)
+  - Several audio improvements (eliminated majority of TIA and Pokey pops)
 
 11/16/19 (0.4)
 ---------------------

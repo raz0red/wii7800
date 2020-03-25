@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <sys/iosupport.h>
 
+#include "Cartridge.h"
 #include "Region.h"
 
 #include "wii_app_common.h"
@@ -52,6 +53,7 @@
 #include "wii_atari.h"
 #include "wii_atari_emulation.h"
 #include "wii_atari_snapshot.h"
+#include "wii_atari_db.h"
 
 #include "gettext.h"
 
@@ -123,13 +125,13 @@ void wii_atari_menu_init() {
     roms_menu = child;
     wii_add_child(wii_menu_root, child);
 
+    child =
+        wii_create_tree_node(NODETYPE_CARTRIDGE_SETTINGS_SPACER, "");
+    wii_add_child(wii_menu_root, child);
+
     //
     // Save state management
     //
-
-    child =
-        wii_create_tree_node(NODETYPE_CARTRIDGE_SAVE_STATES_SPACER, "");
-    wii_add_child(wii_menu_root, child);
 
     TREENODE* states =
         wii_create_tree_node(NODETYPE_CARTRIDGE_SAVE_STATES, "Save states");
@@ -149,6 +151,17 @@ void wii_atari_menu_init() {
 
     child = wii_create_tree_node(NODETYPE_DELETE_STATE, "Delete state");
     wii_add_child(states, child);    
+
+    //
+    // Cartridge settings
+    //
+
+    TREENODE* cart_settings =
+        wii_create_tree_node(NODETYPE_CARTRIDGE_SETTINGS, "Cartridge-specific settings");
+    wii_add_child(wii_menu_root, cart_settings);
+
+    // Add items to the cart settings menu
+    wii_atari_db_create_menu(cart_settings);
 
     //
     // The advanced menu
@@ -208,23 +221,6 @@ void wii_atari_menu_init() {
         wii_create_tree_node(NODETYPE_CONTROLS_SETTINGS, "Control settings");
     wii_add_child(advanced, controls);
 
-    child = wii_create_tree_node(NODETYPE_SWAP_BUTTONS, "Swap buttons");
-    wii_add_child(controls, child);
-
-    child = wii_create_tree_node(NODETYPE_SPACER, "");
-    wii_add_child(controls, child);
-
-    child =
-        wii_create_tree_node(NODETYPE_DIFF_SWITCH_ENABLED, "Diff. switches");
-    wii_add_child(controls, child);
-
-    child = wii_create_tree_node(NODETYPE_DIFF_SWITCH_DISPLAY,
-                                 "Diff. switches display");
-    wii_add_child(controls, child);
-
-    child = wii_create_tree_node(NODETYPE_SPACER, "");
-    wii_add_child(controls, child);
-
     child = wii_create_tree_node(NODETYPE_LIGHTGUN_CROSSHAIR,
                                  "Lightgun crosshair");
     wii_add_child(controls, child);
@@ -233,25 +229,21 @@ void wii_atari_menu_init() {
     wii_add_child(controls, child);
 
     //
-    // The cartridge settings menu
+    // The diff switch settings
     //
 
-    TREENODE* cartridge =
-        wii_create_tree_node(NODETYPE_CARTRIDGE_SETTINGS, "Cartridge settings");
-    wii_add_child(advanced, cartridge);
+    TREENODE* diffswitch =
+        wii_create_tree_node(NODETYPE_ADVANCED_DIFF_SWITCH_SETTINGS, "Difficulty switch settings");
+    wii_add_child(advanced, diffswitch);
 
-    child = wii_create_tree_node(NODETYPE_HIGH_SCORE_MODE, "High score cart.");
-    wii_add_child(cartridge, child);
+    child =
+        wii_create_tree_node(NODETYPE_DIFF_SWITCH_ENABLED, "Diff. Switch buttons");
+    wii_add_child(diffswitch, child);
 
-    child = wii_create_tree_node(NODETYPE_SPACER, "");
-    wii_add_child(cartridge, child);
+    child = wii_create_tree_node(NODETYPE_DIFF_SWITCH_DISPLAY,
+                                 "Display switches");
+    wii_add_child(diffswitch, child);
 
-    child = wii_create_tree_node(NODETYPE_CARTRIDGE_WSYNC, "Handle WSYNC");
-    wii_add_child(cartridge, child);
-
-    child = wii_create_tree_node(NODETYPE_CARTRIDGE_CYCLE_STEALING,
-                                 "Cycle stealing");
-    wii_add_child(cartridge, child);
 
     child = wii_create_tree_node(NODETYPE_SPACER, "");
     wii_add_child(advanced, child);
@@ -425,52 +417,6 @@ void wii_menu_handle_get_node_name(TREENODE* node, char* buffer, char* value) {
             }
             snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
             break;
-        case NODETYPE_HIGH_SCORE_MODE:
-            switch (wii_hs_mode) {
-                case HSMODE_ENABLED_NORMAL:
-                    strmode = "Enabled (excludes saved state)";
-                    break;
-                case HSMODE_ENABLED_SNAPSHOTS:
-                    strmode = "Enabled (includes saved state)";
-                    break;
-                case HSMODE_DISABLED:
-                    strmode = "Disabled";
-                    break;
-                default:
-                    break;
-            }
-            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
-            break;
-        case NODETYPE_CARTRIDGE_WSYNC:
-            switch (wii_cart_wsync) {
-                case CART_MODE_AUTO:
-                    strmode = "(auto)";
-                    break;
-                case CART_MODE_ENABLED:
-                    strmode = "Enabled";
-                    break;
-                case CART_MODE_DISABLED:
-                    strmode = "Disabled";
-                    break;
-                default:
-                    break;
-            }
-            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
-            break;
-        case NODETYPE_CARTRIDGE_CYCLE_STEALING:
-            switch (wii_cart_cycle_stealing) {
-                case CART_MODE_AUTO:
-                    strmode = "(auto)";
-                    break;
-                case CART_MODE_ENABLED:
-                    strmode = "Enabled";
-                    break;
-                case CART_MODE_DISABLED:
-                    strmode = "Disabled";
-                    break;
-            }
-            snprintf(value, WII_MENU_BUFF_SIZE, "%s", strmode);
-            break;
         case NODETYPE_MAX_FRAME_RATE:
             if (wii_max_frame_rate == 0) {
                 snprintf(value, WII_MENU_BUFF_SIZE, "(auto)");
@@ -480,7 +426,6 @@ void wii_menu_handle_get_node_name(TREENODE* node, char* buffer, char* value) {
             break;
         case NODETYPE_DEBUG_MODE:
         case NODETYPE_TOP_MENU_EXIT:
-        case NODETYPE_SWAP_BUTTONS:
         case NODETYPE_DIFF_SWITCH_ENABLED:
         case NODETYPE_LIGHTGUN_CROSSHAIR:
         case NODETYPE_LIGHTGUN_FLASH: 
@@ -504,9 +449,6 @@ void wii_menu_handle_get_node_name(TREENODE* node, char* buffer, char* value) {
                 case NODETYPE_TOP_MENU_EXIT:
                     enabled = wii_top_menu_exit;
                     break;
-                case NODETYPE_SWAP_BUTTONS:
-                    enabled = wii_swap_buttons;
-                    break;
                 case NODETYPE_DIFF_SWITCH_ENABLED:
                     enabled = wii_diff_switch_enabled;
                     break;
@@ -527,6 +469,8 @@ void wii_menu_handle_get_node_name(TREENODE* node, char* buffer, char* value) {
         default:
             break;
     }
+
+    wii_atari_db_get_node_name(node, buffer, value);
 }
 
 /**
@@ -548,6 +492,9 @@ void wii_menu_handle_select_node(TREENODE* node) {
             case NODETYPE_ROM:                
                 snprintf(buff, sizeof(buff), "%s%s",
                          wii_get_roms_dir(), node->name);
+                // Default the cartridge title
+                rom_title[0] = '\0';
+                snprintf(rom_title, WII_MAX_PATH, "%s", node->name);
                 last_rom_index = wii_menu_get_current_index();
                 loading_game = TRUE;
                 wii_start_emulation(buff);
@@ -574,6 +521,9 @@ void wii_menu_handle_select_node(TREENODE* node) {
 
     } else {
         LOCK_RENDER_MUTEX();
+
+        // Allow DB to select node
+        wii_atari_db_select_node(node);
 
         switch (node->node_type) {
             case NODETYPE_ROOT_DRIVE:
@@ -645,24 +595,6 @@ void wii_menu_handle_select_node(TREENODE* node) {
                     wii_diff_switch_display = 0;
                 }
                 break;
-            case NODETYPE_CARTRIDGE_CYCLE_STEALING:
-                wii_cart_cycle_stealing++;
-                if (wii_cart_cycle_stealing > 2) {
-                    wii_cart_cycle_stealing = 0;
-                }
-                break;
-            case NODETYPE_CARTRIDGE_WSYNC:
-                wii_cart_wsync++;
-                if (wii_cart_wsync > 2) {
-                    wii_cart_wsync = 0;
-                }
-                break;
-            case NODETYPE_HIGH_SCORE_MODE:
-                wii_hs_mode++;
-                if (wii_hs_mode > 2) {
-                    wii_hs_mode = 0;
-                }
-                break;
             case NODETYPE_VSYNC:
                 wii_set_vsync(wii_vsync ^ 1);
                 break;
@@ -701,15 +633,15 @@ void wii_menu_handle_select_node(TREENODE* node) {
             case NODETYPE_WIIMOTE_MENU_ORIENT:
                 wii_mote_menu_vertical ^= 1;
                 break;
-            case NODETYPE_SWAP_BUTTONS:
-                wii_swap_buttons ^= 1;
-                break;
             case NODETYPE_DIFF_SWITCH_ENABLED:
                 wii_diff_switch_enabled ^= 1;
                 break;
+            case NODETYPE_CARTRIDGE_SETTINGS:                
+                wii_atari_db_check_exists();
+                wii_menu_push(node);
+                break;
             case NODETYPE_ADVANCED:
-            case NODETYPE_LOAD_ROM:
-            case NODETYPE_CARTRIDGE_SETTINGS:
+            case NODETYPE_LOAD_ROM:            
             case NODETYPE_DISPLAY_SETTINGS:
             case NODETYPE_CONTROLS_SETTINGS:
                 wii_menu_push(node);
@@ -734,6 +666,9 @@ void wii_menu_handle_select_node(TREENODE* node) {
                         wii_menu_move(node, last_rom_index);
                     }
                 }
+                break;
+            case NODETYPE_ADVANCED_DIFF_SWITCH_SETTINGS:
+                wii_menu_push(node);
                 break;
             default:
                 break;
@@ -760,12 +695,17 @@ BOOL wii_menu_handle_is_node_visible(TREENODE* node) {
             return !wii_gx_vi_scaler && !wii_double_strike_mode;
         case NODETYPE_RESET:
         case NODETYPE_RESUME:
-        case NODETYPE_CARTRIDGE_SAVE_STATES_SPACER:
+        case NODETYPE_CARTRIDGE_SETTINGS_SPACER:
+        case NODETYPE_CARTRIDGE_SETTINGS:
         case NODETYPE_CARTRIDGE_SAVE_STATES:
             return wii_last_rom != NULL;
             break;
         default:
             break;
+    }
+
+    if (!wii_atari_db_is_node_visible(node)) {
+        return FALSE;
     }
 
     return TRUE;
@@ -778,9 +718,14 @@ BOOL wii_menu_handle_is_node_visible(TREENODE* node) {
  * @return  Whether the node is selectable
  */
 BOOL wii_menu_handle_is_node_selectable(TREENODE* node) {
-    if (node->node_type == NODETYPE_CARTRIDGE_SAVE_STATES_SPACER) {
+    if (node->node_type == NODETYPE_CARTRIDGE_SETTINGS_SPACER) {
         return FALSE;
     }
+
+    if (!wii_atari_db_is_node_selectable(node)) {
+        return FALSE;
+    }
+
     return TRUE;
 }
 

@@ -38,6 +38,7 @@
 #include "Archive.h"
 #include "Tia.h"
 #include "Pokey.h"
+#include "ExpansionModule.h"
 
 typedef unsigned char byte;
 typedef unsigned short word;

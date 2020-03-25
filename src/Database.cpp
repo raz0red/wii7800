@@ -31,8 +31,14 @@
 #include "wii_app_common.h"
 #endif
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #define DATABASE_SOURCE "Database.cpp"
 
+bool cart_in_db = false;
 bool database_enabled = true;
 std::string database_filename = "./prosystem.dat";
 
@@ -48,8 +54,15 @@ char database_loc[WII_MAX_PATH] = "";
 // ----------------------------------------------------------------------------
 // Load
 // ----------------------------------------------------------------------------
-bool database_Load(std::string digest) {
+bool database_Load(std::string digest) {    
+  cart_in_db = false;
   if(database_enabled) {
+
+#ifdef WII_NETTRACE
+      net_print_string(NULL, 0, "attempting to find db entry with hash: [%s]\n", 
+        digest.c_str());
+#endif
+
 #ifndef WII
       FILE* file = fopen(database_filename.c_str(), "r");
 #else
@@ -63,21 +76,29 @@ bool database_Load(std::string digest) {
           return false;
       }
 
+      // max count of items in the database
+      static int count = 17;
+
       bool found = false;
       char buffer[256];
       while (fgets(buffer, 256, file) != NULL) {
           std::string line = buffer;
           if (line.compare(1, 32, digest.c_str()) == 0) {
               found = true;
-              std::string entry[11];
-              for (int index = 0; index < 11; index++) {
+              cart_in_db = true;
+              std::string entry[count];
+              for (int index = 0; index < count; index++) {
                   buffer[0] = '\0';
                   fgets(buffer, 256, file);
+                  if (strchr(buffer, '[')) {
+                      // Passed the current game in DB
+                      break;
+                  }
                   entry[index] = common_Remove(buffer, '\r');
                   entry[index] = common_Remove(entry[index], '\n');
               }
 
-              cartridge_title = database_GetValue(entry[0]);
+              cartridge_title = database_GetValue(entry[0]); 
               cartridge_type = common_ParseByte(database_GetValue(entry[1]));
               cartridge_pokey = common_ParseBool(database_GetValue(entry[2]));
               cartridge_controller[0] =
@@ -91,7 +112,7 @@ bool database_Load(std::string digest) {
               // Optionally load the lightgun crosshair offsets, hblank, dual
               // analog
               //
-              for (int index = 7; index < 11; index++) {
+              for (int index = 7; index < count; index++) {
                   if (entry[index].find("crossx") != std::string::npos) {
                       cartridge_crosshair_x =
                           common_ParseInt(database_GetValue(entry[index]));
@@ -108,8 +129,38 @@ bool database_Load(std::string digest) {
                       cartridge_dualanalog =
                           common_ParseBool(database_GetValue(entry[index]));
                   }
+                  if (entry[index].find("pokey450") != std::string::npos) {
+                      cartridge_pokey450 =
+                          common_ParseBool(database_GetValue(entry[index]));
+                      if (cartridge_pokey450) {
+                          cartridge_pokey = true;
+                      }
+                  }
+                  if (entry[index].find("xm") != std::string::npos) {
+                      cartridge_xm =
+                          common_ParseBool(database_GetValue(entry[index]));
+                  }
+                  if (entry[index].find("disablebios") != std::string::npos) {
+                      cartridge_disable_bios =
+                          common_ParseBool(database_GetValue(entry[index]));
+                  }
+                  if (entry[index].find("leftswitch") != std::string::npos) {
+                      cartridge_left_switch =
+                          common_ParseByte(database_GetValue(entry[index]));
+                  }
+                  if (entry[index].find("rightswitch") != std::string::npos) {
+                      cartridge_right_switch =
+                          common_ParseByte(database_GetValue(entry[index]));
+                  }
+                  if (entry[index].find("swapbuttons") != std::string::npos) {
+                      cartridge_swap_buttons =
+                          common_ParseBool(database_GetValue(entry[index]));
+                  }
+                  if (entry[index].find("hsc") != std::string::npos) {
+                      cartridge_hsc_enabled =
+                          common_ParseBool(database_GetValue(entry[index]));
+                  }
               }
-
               break;
           }
       }

@@ -5,15 +5,16 @@
 
 Ported by raz0red
 
-Wii7800 is a Nintendo Wii port of the ProSystem emulator developed by Greg Stanton. 
+Wii7800 is a port of the ProSystem emulator developed by Greg Stanton. 
 Additional changes developed by Ludovic Jacomme aka Zx-81 (PSP port), Leonis,
 and gdement. Portions of the Pokey code were adapted from the MAME 
 implementation.
 
 [https://gstanton.github.io/ProSystem1_3/]
 
-| ![](https://wiibrew.org/w/images/thumb/1/16/7800-pole.gif/189px-7800-pole.gif) | ![](https://wiibrew.org/w/images/thumb/a/a5/7800-commando.gif/189px-7800-commando.gif) | ![](https://wiibrew.org/w/images/thumb/d/dd/7800-ninja.gif/189px-7800-ninja.gif) |
-|---|---|---|
+_Wii7800 0.5 + Atari 7800 Homebrew Video_
+
+<a href='http://www.youtube.com/watch?feature=player_embedded&v=Qq7qgz8fVgs' target='_blank'><img src='http://img.youtube.com/vi/Qq7qgz8fVgs/0.jpg' width='425' height=344 /></a>
 
 ## Current status
 
@@ -29,26 +30,37 @@ please visit the [Wii7800 page](http://www.wiibrew.org/wiki/Wii7800) on WiiBrew:
 ## Installation
 
 To install Wii7800, simply extract the zip file directly to your SD card 
-(retain the hierarchical structure exactly).
-
-Cartridge images must be placed in the roms directory (/wii7800/roms).
-(Zip files are supported)
-
-Wii7800 does support loading of the Atari 7800 BIOS, although it isn't 
-necessary. If you wish to use the BIOS, simply place the NTSC and PAL BIOS
-files in the (/wii7800) directory. The NTSC file must be named, "7800.rom",
-while the PAL file must be named, "7800pal.rom". 
+or USB device (retain the hierarchical structure exactly).
 
 ## Lightgun Accuracy, etc.
 
-The crosshair for the Wii7800 emulator is not perfect. For example you may be
-pointing at something and your shot may register to the right or left. This is
-due to the way the 7800 handles hit detection for lightgun games. It only 
-checks for a hit every 7 CPU cycles. There are 330 cycles for the visible 
-portion of each frame. Thus, there are only ~47 hit points for each scanline.
-So, the crosshair at best gets you in approximately the right area, and if you
-miss you need to adjust based on where the shot shows up on the screen 
-(exactly how you do it when there is no crosshair). 
+The crosshair for the Wii7800 emulator is not perfect. For example, you 
+may be pointing at something and your shot may register slightly to the 
+right or left. 
+
+## Cartridge Database
+
+Wii7800 ships with a database that contains recommended settings for the 
+majority of commercial and a limited number of homebrew cartridges. These
+settings cover control settings, difficulty switch settings, and 
+cartridge-related settings (cartridge type, Pokey support, XM support, 
+high score cart support, etc.).
+
+To view/edit the settings applied for a particular cartridge perform the
+following steps:
+
+  * Load the cartridge (via the "Load cartridge" menu item)
+  * Return to the Wii7800 menu
+  * Select the "Cartridge-specific settings" menu item
+  * View/edit the settings for the cartridge 
+
+Some settings will not be applied until the settings are saved and the 
+cartridge is reloaded. When one of these settings is modified, a message
+will be displayed indicating that this particular setting requires the 
+cartridge to be reloaded (and the settings saved prior to loading).
+
+Other settings, such as difficulty switch and control settings may not
+be applied until the cartridge is reset (or reloaded). 
 
 ## Cartridge/ROM Compatibility 
 
@@ -152,6 +164,17 @@ This page contains a list of compatible ROMs by "hash code".
             1              : Left difficulty (if enabled)
             2              : Right difficulty (if enabled)
             Home           : Display Wii7800 menu (see above)
+
+## SMB (Network support)	
+
+Wii7800 allows for loading ROMs over the network via SMB. To enable SMB	
+support, you must edit the "wii7800.conf" file located in the "/wii7800"	
+directory and provide values for the following:	
+
+  * share_ip    : IP address of the computer to connect to.	
+  * share_name  : Name of the share on the computer.	
+  * share_user  : Name of the user to connect as	
+  * share_pass  : Password for the user         
            
 ## Wii7800 crashes, code dumps, etc.
 
@@ -173,6 +196,48 @@ the following locations:
 * Team Twiizers    : For enabling homebrew
 
 ## Change log
+
+### 03/24/20 (0.5)
+    - Partial Expansion Module (XM) support
+      - XRAM
+      - XPokey (limited to single Pokey)
+    - Added support for cartridges with sizes greater than 144k
+    - Additional bank switching modes and cartridge types
+    - Multiple bank switching fixes
+    - Reworked cartridge header detection
+      - Now properly detects bank switching, RAM, etc.
+      - Detects Expansion Module (XM)
+      - Detects High score cartridge
+      - Detects Pokey at $0450
+    - Cartridge database 
+      - Added ability to edit cartridge database settings via menu
+      - Added several new cartridge properties
+        - Pokey at $0450
+        - Default difficulty switch settings
+        - Expansion Module (XM) enabled/disabled
+        - High score cartridge enabled/disabled
+      - Database content
+        - Fixed incorrect controller settings for Sirius, Crossbow, 
+            and Alien Brigade
+        - Added many homebrew cartridges
+    - Display enhancements
+      - Double strike (240p)
+      - GX+VI mode
+      - 16:9 correction
+      - Full widescreen support      
+      - Ability to enable/disable bilinear filter (GX mode)
+      - Color trap filter
+      - Multiple default screen sizes
+    - Hierarchical file navigation support
+    - USB Support
+    - SMB (Network support) for loading ROMs  
+    - Multi-save slot support
+    - Reworked menu system (cartridge-specific settings, etc.)
+    - Support for launching via WiiFlow (and returning)  
+    - Fixed VSYNC issue which caused initial stutter on PAL games
+    - Fixed issue occurring when Kangaroo and Holey were enabled (caused 
+        background to be displayed, resulting in large black squares)
+    - Several audio improvements (eliminated majority of TIA and Pokey pops)
 
 ### 11/16/19 (0.4)
     - Reworked audio integration (resolves audio clipping and popping)
@@ -239,4 +304,3 @@ the following locations:
     - Controls support for Wiimote/Nunchuk/Classic/Gamecube controllers
     - Analog controls support
     - Dual analog support for Gamecube/Classic controllers (Robotron)
-    

@@ -13,13 +13,18 @@
 #include <gccore.h>
 #include <string.h>
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #define SAMPLERATE 48000
 
-#define MIXBUFSIZE_BYTES 32000  // 16000
+#define MIXBUFSIZE_BYTES (64*1024) // 32000 16000
 #define MIXBUFSIZE_SHORT (MIXBUFSIZE_BYTES / 2)
 #define MIXBUFSIZE_WORDS (MIXBUFSIZE_BYTES / 4)
 
-#define SOUNDBUFSIZE 4096  // 2048
+#define SOUNDBUFSIZE (64*1024)  // 4096 2048
 
 static u8 soundbuffer[2][SOUNDBUFSIZE] ATTRIBUTE_ALIGN(32);
 static u8 mixbuffer[MIXBUFSIZE_BYTES];
@@ -73,6 +78,7 @@ static void AudioSwitchBuffers() {
 
     DCFlushRange(soundbuffer[whichab], len);
     AUDIO_InitDMA((u32)soundbuffer[whichab], len);
+    AUDIO_StartDMA();
     whichab ^= 1;
     IsPlaying = 1;
 }
@@ -118,13 +124,14 @@ void ResetAudio() {
  * Puts incoming mono samples into mixbuffer
  * Splits mono samples into two channels (stereo)
  ****************************************************************************/
+
 void PlaySound(u8* Buffer, int count) {
     u32* dst = (u32*)mixbuffer;
     int i;
     u16 sample;
 
     for (i = 0; i < count; i++) {
-        sample = ((Buffer[i] << 8) - 1) & 0xffff;
+        sample = ((Buffer[i] << 8) /*- 1*/) & 0xff00;
         dst[mixhead++] = sample | (sample << 16);
         if (mixhead == MIXBUFSIZE_WORDS)
             mixhead = 0;

@@ -31,6 +31,7 @@
 |                                                                            |
 \*--------------------------------------------------------------------------*/
 
+#include "Cartridge.h"
 #include "Database.h"
 #include "Sound.h"
 #include "Timer.h"
@@ -57,6 +58,12 @@
 #include "wii_atari_emulation.h"
 #include "wii_atari_input.h"
 #include "wii_atari_sdl.h"
+#include "wii_atari_db.h"
+
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
 
 // The size of the crosshair
 #define CROSSHAIR_SIZE 11
@@ -68,7 +75,8 @@
 
 /** The default screen sizes */
 static const screen_size default_screen_sizes[] = {
-    {DEFAULT_SCREEN_X, DEFAULT_SCREEN_Y, "Atari 7800 PAR (6:7)"},
+    {DEFAULT_SCREEN_X, DEFAULT_SCREEN_Y, "0.857 PAR (6:7)"},
+    {616, DEFAULT_SCREEN_Y, "0.9625 PAR"},
     {640, DEFAULT_SCREEN_Y, "Square Pixels (1:1)"}
 };
 
@@ -82,16 +90,6 @@ byte atari_pal8[256] = {0};
 BOOL wii_lightgun_flash = TRUE;
 /** Whether to display a crosshair for the lightgun */
 BOOL wii_lightgun_crosshair = TRUE;
-/** Whether wsync is enabled/disabled */
-u8 wii_cart_wsync = CART_MODE_AUTO;
-/** Whether cycle stealing is enabled/disabled */
-u8 wii_cart_cycle_stealing = CART_MODE_AUTO;
-/** Whether high score cart is enabled */
-BOOL wii_hs_enabled = TRUE;
-/** What mode the high score cart is in */
-BOOL wii_hs_mode = HSMODE_ENABLED_NORMAL;
-/** Whether to swap buttons */
-BOOL wii_swap_buttons = FALSE;
 /** If the difficulty switches are enabled */
 BOOL wii_diff_switch_enabled = FALSE;
 /** When to display the difficulty switches */
@@ -126,13 +124,15 @@ static bool left_difficulty_down = false;
 /** Whether the right difficulty switch is on */
 static bool right_difficulty_down = false;
 /** The keyboard (controls) data */
-static unsigned char keyboard_data[19];
+unsigned char keyboard_data[19];
 /** The amount of time to wait before reading the difficulty switches */
 static int diff_wait_count = 0;
 /** The amount of time left to display the difficulty switch values */
 static int diff_display_count = 0;
 /** The current roms directory */
 static char roms_dir[WII_MAX_PATH] = "";
+/** The current cartridge title */
+char rom_title[WII_MAX_PATH] = "";
 /** The saves directory */
 static char saves_dir[WII_MAX_PATH] = "";
 
@@ -140,6 +140,10 @@ static char saves_dir[WII_MAX_PATH] = "";
 int wii_ir_x = -100;
 /** The y location of the Wiimote (IR) */
 int wii_ir_y = -100;
+
+#if 0
+float wii_orient_roll = 0;
+#endif
 
 // Forward reference
 static void wii_atari_display_crosshairs(int x, int y, BOOL erase);
@@ -346,12 +350,12 @@ void wii_reset_keyboard_data() {
     memset(keyboard_data, 0, sizeof(keyboard_data));
 
     // Left difficulty switch defaults to off
-    keyboard_data[15] = 1;
+    keyboard_data[15] = cartridge_left_switch;
     left_difficulty_down = false;
 
-    // Right difficulty swtich defaults to on
-    keyboard_data[16] = 0;
-    right_difficulty_down = true;
+    // Right difficulty switch defaults to on
+    keyboard_data[16] = cartridge_right_switch;
+    right_difficulty_down = false;
 
     diff_wait_count = prosystem_frequency * 0.75;
     diff_display_count = 0;
@@ -371,8 +375,17 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
 
     database_Load(cartridge_digest);
 
+    // If no title, use the one used during loading the rom
+    if (cartridge_title.length() == 0) {
+        cartridge_title = rom_title;
+    }
+
+    // Provide opportunity to capture settings
+    wii_atari_db_after_load();
+
     bios_enabled = false;
-    if (loadbios) {
+#ifdef ENABLE_BIOS_SUPPORT    
+    if (loadbios && !cartridge_disable_bios)  {
         char boot_rom[WII_MAX_PATH];
         snprintf(boot_rom, WII_MAX_PATH, "%s%s", wii_get_fs_prefix(),
                  (cartridge_region == REGION_PAL ? WII_ROOT_BOOT_ROM_PAL
@@ -384,6 +397,20 @@ bool wii_atari_load_rom(char* filename, bool loadbios) {
             bios_enabled = false;
         }
     }
+#endif    
+
+#ifdef WII_NETTRACE
+    net_print_string(NULL, 0, "Final values:\n");  
+    net_print_string(NULL, 0, "  xm: %s\n", (cartridge_xm ? "1" : "0"));
+    net_print_string(NULL, 0, "  pokey: %s\n", (cartridge_pokey ? "1" : "0"));
+    net_print_string(NULL, 0, "  pokey450: %s\n", (cartridge_pokey450 ? "1" : "0"));
+    net_print_string(NULL, 0, "  tv type: %s\n", cartridge_region ? "PAL" : "NTSC");
+    net_print_string(NULL, 0, "  controller1: %d\n", cartridge_controller[0]);
+    net_print_string(NULL, 0, "  controller2: %d\n", cartridge_controller[1]);
+    net_print_string(NULL, 0, "  cartridge_type: %d\n", cartridge_type);
+    net_print_string(NULL, 0, "  bios disabled: %s\n", cartridge_disable_bios ? "1" : "0");
+    net_print_string(NULL, 0, "  hsc enabled: %s\n", cartridge_hsc_enabled ? "1" : "0");    
+#endif
 
     wii_reset_keyboard_data();
     wii_atari_init_palette8();
@@ -473,10 +500,9 @@ static void wii_atari_display_diff_switches() {
 /**
  * Refreshes the Wii display
  *
- * @param   sync Whether vsync is available for the current frame
  * @param   testframes The number of testframes to run (for loading saves)
  */
-static void wii_atari_refresh_screen(bool sync, int testframes) {
+static void wii_atari_refresh_screen(int testframes) {
     if (diff_wait_count > 0) {
         // Reduces the number of frames remaining to display the difficulty
         // switches.
@@ -494,15 +520,6 @@ static void wii_atari_refresh_screen(bool sync, int testframes) {
     if (drawcrosshair) {
         // Erase the crosshairs
         wii_atari_display_crosshairs(wii_ir_x, wii_ir_y, TRUE);
-    }
-
-    if (sync) {
-#if 0        
-        wii_sync_video();
-#else
-        // TODO: Evaluate how to evaluate this 
-        VIDEO_WaitVSync();
-#endif
     }
 
     if (testframes < 0) {
@@ -560,6 +577,36 @@ static void wii_atari_update_wiimote_ir() {
         wii_ir_y = -100;
     }
 }
+
+#if 0
+static void wii_atari_update_wiimote_roll() {
+    orient_t orient;
+    WPAD_Orientation( WPAD_CHAN_0, &orient );
+
+    wii_orient_roll = orient.roll;
+
+    //-60 + 60;
+
+    int val = wii_orient_roll;
+    if (val < -60)
+        val = -60;
+    if (val > 60)
+        val = 60;
+
+    val = -val;
+
+    // 0 to 120;
+    val += 60; 
+
+    float ratio = 140/120.0;//(circus)
+    //float ratio = 60/120.0; //(ark)
+    val *= ratio;
+    val += 40;  //(circus)
+    //val += 20;//  (ark)
+
+    wii_orient_roll = val;    
+}
+#endif
 
 // The number of cycles per scanline that the 7800 checks for a hit
 #define LG_CYCLES_PER_SCANLINE 318
@@ -672,13 +719,13 @@ static void wii_atari_update_joystick(int joyIndex,
              gcHeld & GC_BUTTON_ATARI_UP || wii_analog_up(expY, gcY) ||
              wii_analog_up(expRjsY, gcRjsY));
         // | 04 10     | Joystick 1 2 | Button 1
-        keyboard_data[wii_swap_buttons ? 4 + offset : 5 + offset] =
+        keyboard_data[cartridge_swap_buttons ? 4 + offset : 5 + offset] =
             (held & (WII_BUTTON_ATARI_FIRE |
                      (isClassic ? WII_CLASSIC_ATARI_FIRE
                                 : WII_NUNCHECK_ATARI_FIRE)) ||
              gcHeld & GC_BUTTON_ATARI_FIRE);
         // | 05 11     | Joystick 1 2 | Button 2
-        keyboard_data[wii_swap_buttons ? 5 + offset : 4 + offset] =
+        keyboard_data[cartridge_swap_buttons ? 5 + offset : 4 + offset] =
             (held & (WII_BUTTON_ATARI_FIRE_2 |
                      (isClassic ? WII_CLASSIC_ATARI_FIRE_2
                                 : WII_NUNCHECK_ATARI_FIRE_2)) ||
@@ -748,6 +795,9 @@ static void wii_atari_update_keys(unsigned char keyboard_data[19]) {
     if (lightgun_enabled) {
         wii_atari_update_wiimote_ir();
     }
+#if 0
+    wii_atari_update_wiimote_roll();
+#endif    
     wii_atari_update_joystick(0, keyboard_data);
     wii_atari_update_joystick(1, keyboard_data);
 }
@@ -794,12 +844,17 @@ void wii_render_callback() {
              * riot_drb, memory_ram[SWCHB] */
             sprintf(text,
                     "v: %.2f, hs: %d, %d, timer: %d, wsync: %s, %d, stl: %s, "
-                    "mar: %d, cpu: %d, ext: %d, rnd: %d, hb: %d",
+                    "mar: %d, cpu: %d, ext: %d, rnd: %d, hb: %d, db: %s",
                     wii_fps_counter, high_score_set, hs_sram_write_count,
                     (riot_timer_count % 1000), (dbg_wsync ? "1" : "0"),
                     dbg_wsync_count, (dbg_cycle_stealing ? "1" : "0"),
                     dbg_maria_cycles, dbg_p6502_cycles, dbg_saved_cycles,
-                    RANDOM, cartridge_hblank);
+                    RANDOM, cartridge_hblank,
+                    cart_in_db ? "1" : "0");
+#if 0
+    ", roll: %f"
+    , wii_orient_roll
+#endif
         }
 
         GXColor color = (GXColor){0x0, 0x0, 0x0, 0x80};
@@ -903,7 +958,7 @@ void wii_atari_main_loop(int testframes) {
     // Only enable lightgun if the cartridge supports it and we are displaying
     // at 2x.
     lightgun_enabled =
-        (cartridge_controller[0] & CARTRIDGE_CONTROLLER_LIGHTGUN);
+        (cartridge_controller[0] == CARTRIDGE_CONTROLLER_LIGHTGUN);
 
     float fps_counter;
     u32 timerCount = 0;
@@ -917,6 +972,11 @@ void wii_atari_main_loop(int testframes) {
         wii_set_video_mode(TRUE);              
         wii_gx_push_callback(&wii_render_callback, TRUE, NULL);                                    
     }                                                        
+    
+    // Sync up timing prior to launching
+    VIDEO_WaitVSync();
+    VIDEO_WaitVSync();
+    timer_Reset();
 
     while (!prosystem_paused) {
         if (testframes < 0) {
@@ -929,13 +989,23 @@ void wii_atari_main_loop(int testframes) {
         if (prosystem_active && !prosystem_paused) {
             prosystem_ExecuteFrame(keyboard_data);
 
+            if (wii_vsync) {
+#if 0        
+                wii_sync_video();
+#else
+                // TODO: Evaluate how to evaluate this 
+                VIDEO_WaitVSync();
+#endif
+            }
+
             while (!timer_IsTime())
                 ;
 
             fps_counter =
                 (((float)timerCount++ / (SDL_GetTicks() - start_time)) *
                  1000.0);
-            wii_atari_refresh_screen(wii_vsync, testframes);
+
+            wii_atari_refresh_screen(testframes);
 
             if (testframes < 0) {
                 sound_Store();

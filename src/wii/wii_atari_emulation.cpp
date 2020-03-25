@@ -51,6 +51,10 @@ void WII_VideoStart();
 void WII_VideoStop();
 }
 
+#if 0
+extern u32 sound_max;
+#endif
+
 /**
  * Starts the emulator for the specified rom file.
  *
@@ -65,9 +69,6 @@ BOOL wii_start_emulation(char* romfile,
                          const char* savefile,
                          BOOL reset,
                          BOOL resume) {
-    // Disabled the high score cartridge
-    wii_hs_enabled = (wii_hs_mode != HSMODE_DISABLED);
-
     // Write out the current config
     wii_write_config();
 
@@ -79,11 +80,6 @@ BOOL wii_start_emulation(char* romfile,
     if (!reset && !resume) {
         // Whether to load a save file
         loadsave = (savefile != NULL && strlen(savefile) > 0);
-
-        // Disable the high score cart for saves if applicable
-        if (loadsave && (wii_hs_mode != HSMODE_ENABLED_SNAPSHOTS)) {
-            wii_hs_enabled = false;
-        }
 
         // If we are not loading a save, reset snapshot related state
         // information (current index, etc.)
@@ -124,6 +120,8 @@ BOOL wii_start_emulation(char* romfile,
 
                     succeeded = prosystem_Load(savefile);
                     if (succeeded) {
+                        // Load high score cart after loading saved state
+                        cartridge_LoadHighScoreCart();
                         wii_atari_pause(false);
                     } else {
                         wii_set_status_message(
@@ -154,6 +152,11 @@ BOOL wii_start_emulation(char* romfile,
             free(old_last);
         }
 
+        // This was a newly loaded rom, set snapshot index to latest snapshot
+        if (!loadsave && !reset && !resume) {
+            wii_snapshot_reset(TRUE);
+        }
+
         if (wii_max_frame_rate != 0) {
             prosystem_frequency = wii_max_frame_rate;
         }
@@ -164,6 +167,10 @@ BOOL wii_start_emulation(char* romfile,
 
         // Wait until no buttons are pressed
         wii_wait_until_no_buttons(2);
+
+#if 0
+        sound_max = 0;
+#endif        
 
         wii_atari_main_loop();
 

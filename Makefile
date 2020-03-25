@@ -45,8 +45,8 @@ CFLAGS = \
     -g -O1 -Wall $(MACHDEP) $(INCLUDE) \
     -DNOCRYPT -DWII -DBIG_ENDIAN -DWII_BIN2O \
     -Wno-format-truncation \
-    -Wno-narrowing
-          
+    -Wno-narrowing 
+#-DWII_NETTRACE          
 #-DLOWTRACE -DDEBUG
 CXXFLAGS = $(CFLAGS)
 LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
@@ -91,6 +91,7 @@ CPPFILES := \
     Cartridge.cpp \
     Common.cpp \
     Database.cpp \
+    ExpansionModule.cpp \
     Hash.cpp \
     Logger.cpp \
     Maria.cpp \
@@ -106,6 +107,7 @@ CPPFILES := \
     Tia.cpp \
     wii_atari.cpp \
     wii_atari_config.cpp \
+    wii_atari_db.cpp \
     wii_atari_emulation.cpp \
     wii_atari_menu.cpp \
     wii_atari_sdl.cpp \

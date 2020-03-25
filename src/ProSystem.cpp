@@ -32,6 +32,11 @@
 #include "wii_sdl.h"
 #include "wii_atari.h"
 
+#ifdef WII_NETTRACE
+#include <network.h>
+#include "net_print.h"
+#endif
+
 #define PRO_SYSTEM_SOURCE "ProSystem.cpp"
 #define PRO_SYSTEM_STATE_HEADER "PRO-SYSTEM STATE"
 
@@ -63,6 +68,8 @@ void prosystem_Reset( ) {
     tia_Reset( );
     pokey_Clear( );
     pokey_Reset( );
+    xm_Reset( );
+
     memory_Reset( );
     maria_Clear( );
     maria_Reset( );
@@ -109,20 +116,18 @@ bool dbg_cycle_stealing;
 // ExecuteFrame
 // ----------------------------------------------------------------------------
 
+#if 0
+extern float wii_orient_roll;
+#endif
+
 void prosystem_ExecuteFrame(const byte* input) 
 {
     // Is WSYNC enabled for the current frame?
-    bool wsync = 
-        ( ( wii_cart_wsync == CART_MODE_ENABLED ) ||
-          ( ( wii_cart_wsync == CART_MODE_AUTO ) &&
-            ( !( cartridge_flags & CARTRIDGE_WSYNC_MASK ) ) ) );
+    bool wsync = !( cartridge_flags & CARTRIDGE_WSYNC_MASK );
     dbg_wsync = wsync;
 
     // Is Maria cycle stealing enabled for the current frame?
-    bool cycle_stealing = 
-        ( ( wii_cart_cycle_stealing == CART_MODE_ENABLED ) ||
-          ( ( wii_cart_cycle_stealing == CART_MODE_AUTO ) &&
-            ( !( cartridge_flags & CARTRIDGE_CYCLE_STEALING_MASK ) ) ) );
+    bool cycle_stealing = !( cartridge_flags & CARTRIDGE_CYCLE_STEALING_MASK );
     dbg_cycle_stealing = cycle_stealing;
 
     // Is the lightgun enabled for the current frame?
@@ -137,10 +142,18 @@ void prosystem_ExecuteFrame(const byte* input)
     dbg_maria_cycles = 0; // debug
     dbg_p6502_cycles = 0; // debug    
 
-    if( cartridge_pokey ) pokey_Frame();
+    if( cartridge_pokey || cartridge_xm ) pokey_Frame();
 
     for( maria_scanline = 1; maria_scanline <= prosystem_scanlines; maria_scanline++ ) 
     {
+#if 0      
+        if ((int)wii_orient_roll == maria_scanline) {
+          memory_ram[INPT2] &= 0x7f; 
+        } else {
+          memory_ram[INPT2] |= 0x80;
+        }
+#endif    
+
         if( maria_scanline == maria_displayArea.top ) 
         {
             memory_ram[MSTAT] = 0;
@@ -253,12 +266,12 @@ void prosystem_ExecuteFrame(const byte* input)
         if( lightgun ) prosystem_FireLightGun();
 
         tia_Process(2);
-        if( cartridge_pokey ) 
+        if( cartridge_pokey || cartridge_xm ) 
         {
             pokey_Process(2);
         }
 
-        if( cartridge_pokey ) pokey_Scanline();
+        if( cartridge_pokey || cartridge_xm ) pokey_Scanline();
     }  
 
     prosystem_frame++;
@@ -280,8 +293,8 @@ bool prosystem_Save(std::string filename, bool compress)
     logger_LogError("Filename is invalid.", PRO_SYSTEM_SOURCE);
     return false;
   }
-
-  if (! loc_buffer) loc_buffer = (byte *)malloc(33000 * sizeof(byte));
+                                                
+  if (!loc_buffer) loc_buffer = (byte *)malloc((33000 + XM_RAM_SIZE + 4) * sizeof(byte));
 
   logger_LogInfo("Saving game state to file " + filename + ".");
   
@@ -329,38 +342,47 @@ bool prosystem_Save(std::string filename, bool compress)
   loc_buffer[size++] = riot_dra;
   loc_buffer[size++] = riot_drb;
   loc_buffer[size++] = riot_timing;
-  loc_buffer[size++] = ( 0xff & ( riot_timer >> 8 ) );
-  loc_buffer[size++] = ( 0xff & riot_timer );  
+  loc_buffer[size++] = (0xff & (riot_timer >> 8));
+  loc_buffer[size++] = (0xff & riot_timer);
   loc_buffer[size++] = riot_intervals;
-  loc_buffer[size++] = ( 0xff & ( riot_clocks >> 8 ) );
-  loc_buffer[size++] = ( 0xff & riot_clocks );
+  loc_buffer[size++] = (0xff & (riot_clocks >> 8));
+  loc_buffer[size++] = (0xff & riot_clocks);
+
+  // XM (if applicable)
+  if (cartridge_xm) {
+    loc_buffer[size++] = xm_reg;
+    loc_buffer[size++] = xm_bank;
+    loc_buffer[size++] = xm_pokey_enabled;
+    loc_buffer[size++] = xm_mem_enabled;
 
 #if 0
-  if(!compress) {
-#endif
-    FILE* file = fopen(filename.c_str( ), "wb");
-    if(file == NULL) {
-      logger_LogError("Failed to open the file " + filename + " for writing.", PRO_SYSTEM_SOURCE);
-      return false;
+net_print_string(NULL, 0, "Wrote XM: xm_reg: %d, xm_bank: %d, xm_pokey_enabled: %d, xm_mem_enabled: %d\n", 
+    xm_reg, xm_bank, xm_pokey_enabled, xm_mem_enabled);
+#endif    
+
+    for (index = 0; index < XM_RAM_SIZE; index++) {
+      loc_buffer[size + index] = xm_ram[index];
     }
-  
-    if(fwrite(loc_buffer, 1, size, file) != size) {
+    size += XM_RAM_SIZE;
+  }
+
+  FILE* file = fopen(filename.c_str(), "wb");
+  if (file == NULL) {
+      logger_LogError("Failed to open the file " + filename + " for writing.",
+                      PRO_SYSTEM_SOURCE);
+      return false;
+  }
+
+  if (fwrite(loc_buffer, 1, size, file) != size) {
       fclose(file);
-      logger_LogError("Failed to write the save state data to the file " + filename + ".", PRO_SYSTEM_SOURCE);
+      logger_LogError(
+          "Failed to write the save state data to the file " + filename + ".",
+          PRO_SYSTEM_SOURCE);
       return false;
-    }
-  
-    fflush(file);
-    fclose(file);
-#if 0
   }
-  else {
-    if(!archive_Compress(filename.c_str( ), "Save.sav", loc_buffer, size)) {
-      logger_LogError("Failed to compress the save state data to the file " + filename + ".", PRO_SYSTEM_SOURCE);
-      return false;
-    }
-  }
-#endif 
+
+  fflush(file);
+  fclose(file);
 
   return true;
 }
@@ -375,7 +397,7 @@ bool prosystem_Load(const std::string filename) {
     return false;
   }
 
-  if (! loc_buffer) loc_buffer = (byte *)malloc(33000 * sizeof(byte));
+  if (!loc_buffer) loc_buffer = (byte *)malloc((33000 + XM_RAM_SIZE + 4) * sizeof(byte));
 
   logger_LogInfo("Loading game state from file " + filename + ".");
   
@@ -400,10 +422,11 @@ bool prosystem_Load(const std::string filename) {
       return false;
     }
 
-    if( size != 16445 && 
-        size != 32829 && 
-        size != 16453 && 
-        size != 32837 ) {
+    if( size != 16445 && size != 32829 &&     /* no RIOT */ 
+        size != 16453 && size != 32837 &&     /* with RIOT */ 
+        size != (16453 + 4 + XM_RAM_SIZE) &&  /* XM without supercart ram */ 
+        size != (32837 + 4 + XM_RAM_SIZE))    /* XM with supercart ram */ 
+    {
       fclose(file);
       logger_LogError("Save state file has an invalid size.", PRO_SYSTEM_SOURCE);
       return false;
@@ -416,9 +439,6 @@ bool prosystem_Load(const std::string filename) {
     }
     fclose(file);
   }  
-  else if(size == 16445 || size == 32829 ) {
-    archive_Uncompress(filename, loc_buffer, size);
-  }
   else {
     logger_LogError("Save state file has an invalid size.", PRO_SYSTEM_SOURCE);
     return false;
@@ -468,28 +488,55 @@ bool prosystem_Load(const std::string filename) {
   offset += 16384;
 
   if(cartridge_type == CARTRIDGE_TYPE_SUPERCART_RAM) {
-    if(size != 32829 && size != 32837) {
-      logger_LogError("Save state file has an invalid size.", PRO_SYSTEM_SOURCE);
-      return false;
-    }
-    for(index = 0; index < 16384; index++) {
-      memory_ram[16384 + index] = loc_buffer[offset + index];
+      if (size != 32829 && /* no RIOT */
+          size != 32837 && /* with RIOT */
+          size != (32837 + 4 + XM_RAM_SIZE)) /* XM */ {
+          logger_LogError("Save state file has an invalid size.",
+                          PRO_SYSTEM_SOURCE);
+          return false;
+      }
+      for (index = 0; index < 16384; index++) {
+          memory_ram[16384 + index] = loc_buffer[offset + index];
     }
     offset += 16384; 
-  }  
+  }
 
-  if( size == 16453 || size == 32837 )
-  {
+  if (size == 16453 || /* no supercart ram */
+      size == 32837 || /* supercart ram */
+      size == (16453 + 4 + XM_RAM_SIZE) || /* xm, no supercart ram */
+      size == (32837 + 4 + XM_RAM_SIZE)) /* xm, supercart ram */ {
       // RIOT state
       riot_dra = loc_buffer[offset++];
       riot_drb = loc_buffer[offset++];
       riot_timing = loc_buffer[offset++];
-      riot_timer = ( loc_buffer[offset++] << 8 );
+      riot_timer = (loc_buffer[offset++] << 8);
       riot_timer |= loc_buffer[offset++];
       riot_intervals = loc_buffer[offset++];
-      riot_clocks = ( loc_buffer[offset++] << 8 );
+      riot_clocks = (loc_buffer[offset++] << 8);
       riot_clocks |= loc_buffer[offset++];
+  }
 
+  // XM (if applicable)
+  if (cartridge_xm) {
+      if ((size != (16453 + 4 + XM_RAM_SIZE)) &&
+          (size != (32837 + 4 + XM_RAM_SIZE))) {
+          logger_LogError("Save state file has an invalid size.",
+                          PRO_SYSTEM_SOURCE);
+          return false;
+      }
+      xm_reg = loc_buffer[offset++];
+      xm_bank = loc_buffer[offset++];
+      xm_pokey_enabled = loc_buffer[offset++];
+      xm_mem_enabled = loc_buffer[offset++];
+
+#if 0
+net_print_string(NULL, 0, "Read XM: xm_reg: %d, xm_bank: %d, xm_pokey_enabled: %d, xm_mem_enabled: %d\n", 
+    xm_reg, xm_bank, xm_pokey_enabled, xm_mem_enabled);
+#endif    
+
+      for (index = 0; index < XM_RAM_SIZE; index++) {
+          xm_ram[index] = loc_buffer[offset++];
+      }
   }
 
   return true;
