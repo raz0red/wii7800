@@ -182,7 +182,7 @@ If you are having issues with Wii7800, please let me know about it via one of
 the following locations:
 
 * http://www.wiibrew.org/wiki/Talk:Wii7800
-* http://www.twitchasylum.com/forum/viewtopic.php?t=519
+* https://github.com/raz0red/wii7800/issues
 
 ## Special thanks
 
