@@ -12,8 +12,9 @@ implementation.
 
 [https://gstanton.github.io/ProSystem1_3/]
 
-| ![](https://wiibrew.org/w/images/thumb/1/16/7800-pole.gif/189px-7800-pole.gif) | ![](https://wiibrew.org/w/images/thumb/a/a5/7800-commando.gif/189px-7800-commando.gif) | ![](https://wiibrew.org/w/images/thumb/d/dd/7800-ninja.gif/189px-7800-ninja.gif) |
-|---|---|---|
+_Wii7800 0.5 + Atari 7800 Homebrew Video_
+
+<a href='http://www.youtube.com/watch?feature=player_embedded&v=Qq7qgz8fVgs' target='_blank'><img src='http://img.youtube.com/vi/Qq7qgz8fVgs/0.jpg' width='425' height=344 /></a>
 
 ## Current status
 
