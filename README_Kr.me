@@ -1,0 +1,232 @@
+[![라이센스: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+[![작업 상태](https://github.com/raz0red/wii7800/workflows/Build/badge.svg)](https://github.com/raz0red/wii7800/actions)
+
+# Wii7800
+
+raz0red에 의해 포팅
+
+Wii7800은 Greg Stanton이 개발한 ProSystem 에뮬레이터의 닌텐도 Wii 포트입니다.
+Ludovic Jacomme aka Zx-81 (PSP 포트), Leonis 및 gdement에서 추가로 변경한 사항
+Pokey 코드의 일부는 MAME 구현에서 채택되었습니다.
+
+[https://gstanton.github.io/ProSystem1_3/]
+
+| ![](https://wiibrew.org/w/images/thumb/1/16/7800-pole.gif/189px-7800-pole.gif) | ![](https://wiibrew.org/w/images/thumb/a/a5/7800-commando.gif/189px-7800-commando.gif) | ![](https://wiibrew.org/w/images/thumb/d/dd/7800-ninja.gif/189px-7800-ninja.gif) |
+|---|---|---|
+
+## 현재 상태
+
+Wii7800은 진행중인 작업입니다. 최신 프로젝트 정보를 보려면 WiiBrew의
+[Wii7800 페이지](http://www.wiibrew.org/wiki/Wii7800)를 방문하십시오:
+
+[http://www.wiibrew.org/wiki/Wii7800]
+
+## 알려진 사항
+
+    - High Score 카트리지는 NTSC 게임에서만 호환됩니다.
+
+## 설치
+
+Wii7800을 설치하려면 zip 파일을 SD 카드로 직접 추출하십시오.
+(계층 구조를 정확하게 유지하십시오).
+
+카트리지 이미지는 roms 디렉토리 (/wii7800/roms)에 있어야 합니다.
+(Zip 파일 지원)
+
+Wii7800은 Atari 7800 BIOS 로딩을 지원하지 않습니다. 필요한. BIOS를 사용하려면
+NTSC 및 PAL BIOS 파일을 (/wii7800) 디렉토리에 두십시오. NTSC 파일 이름은
+"7800.rom"이어야하고 PAL 파일 이름은 "7800pal.rom"이어야 합니다.
+
+## 라이트 건 정확도 등
+
+Wii7800 에뮬레이터의 십자선은 완벽하지 않습니다. 예를 들어, 무언가를 가리키고
+있을때 샷이 오른쪽이나 왼쪽에 등록될 수 있습니다. 이것은 7800이 라이트 건 게임의
+적중 탐지를 처리하는 방식 때문입니다. 7 CPU주기마다 적중만 검사합니다. 각 프레임의
+보이는 부분에 대해 330 사이클이 있습니다. 따라서 각 스캔 라인에 대해 최대 47 개의
+적중률이 있습니다. 따라서 십자선은 거의 오른쪽 영역에 도달하는 데 도움이 되며,
+누락된 경우 화면에서 샷이 표시되는 위치 (십자선이 없을 때 정확히 어떻게 수행하는지)에
+따라 조정해야합니다.
+
+## 카트리지 / ROM 호환성
+
+특정 카트리지/ROM이 Wii7800과 호환되는지 확인하려면 다음 페이지를 참조하십시오.
+
+[http://www.wiibrew.org/wiki/Wii7800/Cartridge_Compatbility]
+
+참고: Wii7800과 호환되지 않는 많은 ROM 덤프가 있습니다.
+그러나 일반적으로 작동하는 카트리지 덤프가 있습니다.
+이 페이지에는 "해시 코드" 별 호환 ROM 목록이 포함되어 있습니다.
+
+## 컨트롤
+
+    Wii7800 메뉴:
+    -------------
+
+        위모트:
+
+            Up/Down  : 스크롤
+            A        : 선택하기 
+            B        : 뒤로가기
+            Home     : 홈브류 채널로 종료
+            Power    : 전원 끄기
+
+         클래식 컨트롤러:
+
+            Up/Down  : 스크롤
+            A        : 선택하기 
+            B        : 뒤로가기
+            Home     : 홈브류 채널로 종료
+            
+         눈챠크 컨트롤러:
+
+            Up/Down  : 스크롤
+            C        : 선택하기 
+            Z        : 뒤로가기
+                  
+         게임큐브 컨트롤러:
+
+            Up/Down  : 스크롤
+            A        : 선택하기 
+            B        : 뒤로가기
+            Z        : 홈브류 채널로 종료
+                        
+    게임에서 (조이스틱):
+    ---------------------------
+
+        위모트:
+
+            D-pad          : 이동
+            2              : 발사 1
+            1              : 발사 2
+            +              : [리셋]
+            -              : [선택하기]
+            A              : (활성화 된 경우) 왼쪽 어려움
+            B              : (활성화 된 경우) 오른쪽 어려움
+            Home           : Wii7800 메뉴 표시 (위 참조)
+
+         클래식 컨트롤러:
+
+            D-pad/아날로그 : 이동
+            오른쪽 아날로그: (활성화 된 경우) 듀얼 아날로그
+            A              : 발사 1
+            B              : 발사 2
+            +              : [리셋]
+            -              : [선택하기]
+            ZL/ZR 트리거   : [일시정지]
+            L 트리거       : (활성화 된 경우) 왼쪽 어려움
+            R 트리거       : (활성화 된 경우) 오른쪽 어려움
+            Home           : Wii7800 메뉴 표시 (위 참조)
+            
+         눈챠크 컨트롤러:
+
+            아날로그       : 이동
+            C              : 발사 1
+            Z              : 발사 2
+                  
+         게임큐브 컨트롤러:
+
+            D-pad/아날로그 : 이동
+            C 아날로그     : (활성화 된 경우) 듀얼 아날로그
+            A              : 발사 1
+            B              : 발사 2
+            Start          : [리셋]
+            L 트리거       : [선택하기]
+            R 트리거       : [일시정지]
+            Y              : (활성화 된 경우) 왼쪽 어려움
+            X              : (활성화 된 경우) 오른쪽 어려움
+            Z              : Wii7800 메뉴 표시 (위 참조)
+            
+    게임에서 (라이트건):
+    ---------------------------
+
+        위모트:
+
+            위모트 IR      : 이동
+            A/B            : 발사 1
+            +              : [리셋]
+            -              : [선택하기]
+            1              : (활성화 된 경우) 왼쪽 어려움
+            2              : (활성화 된 경우) 오른쪽 어려움
+            Home           : Wii7800 메뉴 표시 (위 참조)
+           
+## Wii7800 충돌, 코드 덤프 등
+
+Wii7800에 문제가있는 경우 다음 위치 중 하나를 통해 알려주십시오:
+
+* http://www.wiibrew.org/wiki/Talk:Wii7800
+* http://www.twitchasylum.com/forum/viewtopic.php?t=519
+
+## 특별 감사
+
+* NeoRame          : 아이콘
+* munky6           : 리드 테스터
+* Curt Vendel      : High Score ROM 사용 권한 부여
+* GroovyBee        : 기술적 도움
+* mimo             : 테스트
+* Tantric/eke-eke  : 오디오 코드 샘플
+* Tantric          : SDL의 대폭 개선
+* Team Twiizers    : 홈브류 활성화
+
+## 변경 이력
+
+### 19/11/16 (0.4)
+	- 재작업 된 오디오 통합 (오디오 클리핑 및 팝핑 해결)
+    - 리팩토링 된 프로젝트 레이아웃. 이제 타사 라이브러리가 포함
+        최신 devkitPro 릴리스에 대한 빌드 노력을 줄여야 합니다
+    - 최신 버전의 devkitPPC (r34) 및 libogc (1.8.23)로 업데이트
+    - arocchi의 PR#7 합병
+        wii7800이 최신 DevKit과 작동하도록 수정
+    - 클로버로 PR#3 병합
+        헤더에서 카트리지 크기를 읽을 때 비트 시프트 오버 플로우 수정
+    - 클로버로 PR#2 합병
+        내부 ROM 데이터베이스 업데이트
+    - 클로버로 PR#1 합병
+        슈퍼 게임 카트 유형을 올바르게 로드
+
+### 10/03/29 (0.3)
+	- GX 기반 스케일러 (Plutos, Xevious, Motor Psycho의 부드러운 스크롤)
+    - "Display" 아래의 "Screen Size" 옵션을 통해 화면 크기를 모든 크기/치수로
+      조정할 수 있습니다. 카트리지를 넣은 후에 입력하면 크기 조정을 돕기 위해
+	  마지막 프레임이 표시됩니다.
+    - Ballblazer의 그래픽 결함 수정
+    - Pokey 사운드 에뮬레이션을위한 RANDOM(읽기) 및 SKCTLS(쓰기) 구현
+    - Ballblazer는 이제 모든 소리 재생
+    - Pokey 코드의 사소한 리팩터
+    - 라이트 건 관련 코드에 대한 약간의 조정
+    - (Underball에서) 업데이트 된 팔레트
+    - 업데이트 된 메뉴 코드, 딥 스위치의 GX 렌더링 및 디버그 정보
+    - ProSystem 데이터베이스에서 HBLANK 기간, 이중 아날로그 지원 기능 설정
+
+### 09/06/29 (0.2)
+    - 라이트 건 지원
+    - High score 카트리지 지원
+    - Maria 사이클 타이밍의 정확도 향상, 이제 게임이 원하는 속도
+	  (One on One, Tower Toppler, Summer Games, KLAX, Karateka 등)에 가깝게
+	  실행.
+    - PAL 게임 호환성 향상 (Ballblazer, Commando, Food Fight 작동)		
+    - 이제 주파수에 상관없이 오디오가 들림 (PAL 게임 및 커스텀 프레임 속도)
+    - 타이머는 이제 Maria를 통해 그리고 WSYNC 동안 생성된 주기를 올바르게 고려.
+    - ProSystem 데이터베이스 형식 변경
+        - Maria주기는 이제 기본적으로 활성화
+ 		  (옵션 0x1은 이제 이전과 반대인 Maria를 비활성화합니다)
+        - 게임당 라이트 건 십자선 오프셋을 조정하는 기능
+    - 모든 게임에서 이제 (MIA를 제외하고) ProSystem 데이터베이스에서 Maria주기와
+	  WSYNC가 활성화되었습니다.  
+    - 대부분의 게임에서 작동하도록 콘솔 스위치 기본값 업데이트
+    - 디버그 출력 추가 (Maria vs. CPU 주기, 타이머 정보 등)
+    - 다양한 변경으로 다른 게임 개선
+        - Kung Fu Master에 더 이상 디스플레이 왼쪽 상단에 선이 없고
+          (BIOS를 사용하는 경우)Fuji 로고가 정상적으로 나타남.
+        - Midnight Mutants는 그래픽 결함 적음.
+        - Summer Games은 그래픽 결함이 적음.
+        - Plutos는 그래픽 결함이 약간 있음.
+        - RIOT 타이머를 사용하는 게임의 저장/복원 상태 문제 해결	
+        
+### 09/05/26 (0.1)
+    - 자동 로드/자동 저장을 포함한 스냅샷 지원
+    - 7800 BIOS 옵션 로딩
+    - ProSystem 에뮬레이터 데이터베이스 지원
+    - 하나 및 두 개의 버튼 7800 게임에 대한 컨트롤을 감지하고 구성
+    - 위모트/눈챠크/클래식/게임큐브 컨트롤러 지원
+    - 아날로그 컨트롤 지원
+    - 게임큐브/클래식 컨트롤러 (로봇론)에 대한 듀얼 아날로그 지원
